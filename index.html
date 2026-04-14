@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Frank's Diesel Scanner 2.3</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  body{background:#F2F0ED;font-family:'Arial Narrow',Arial,sans-serif;max-width:480px;margin:0 auto;min-height:100vh;color:#333}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit;font-size:16px !important} 
+  
+  /* Layout & Overlays */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+  .sheet{background:#1A1A1A;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px;border:1px solid #2A2A2A;max-height:92vh;overflow-y:auto;color:#EEE}
+  
+  /* Typography */
+  .sheet-title{font-size:18px;font-weight:900;color:#FF6B35;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+  .lbl{font-size:11px;color:#888;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px;margin-top:12px}
+  .inp{width:100%;padding:12px;background:#111;border:1px solid #3A3A3A;border-radius:10px;color:#EEE;font-size:15px}
+  
+  /* Buttons */
+  .btn{width:100%;padding:14px;border:none;border-radius:12px;color:#fff;font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;transition:opacity 0.2s}
+  .btn:active{opacity:0.7}
+  .btn-orange{background:#FF6B35}
+  .btn-green{background:#4ECDC4;color:#1A1A1A}
+  .btn-dark{background:#2A2A2A}
+  .btn-outline{background:transparent;border:1px solid #3A3A3A;color:#888}
+  .btn-inline-scan{background:#2A2A2A;border:1px solid #FF6B35;color:#FF6B35;font-size:11px;padding:10px;border-radius:10px;margin-bottom:15px;width:100%}
+
+  /* Grid & Dashboard */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:15px;padding-bottom:100px}
+  .tile{background:#fff;border:1px solid #E0DCD8;border-radius:16px;padding:18px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;min-height:110px;box-shadow:0 2px 4px rgba(0,0,0,0.03)}
+  .badge{position:absolute;top:8px;right:8px;border-radius:10px;font-size:10px;font-weight:900;padding:2px 7px;color:#000}
+  .tile-icon{font-size:32px}
+  .tile-label{font-size:11px;font-weight:800;color:#444;text-align:center}
+  .tile-amt{font-size:11px;font-weight:700}
+
+  .stat-strip{background:#1A1A1A;display:flex;padding:15px;gap:10px;border-bottom:1px solid #2A2A2A;color:#EEE}
+  .stat-box{flex:1}
+  .stat-lbl{font-size:9px;color:#666;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+  .stat-val{font-size:18px;font-weight:900}
+  .stat-sub{font-size:10px;color:#555;margin-top:2px}
+
+  .receipt-row{border-radius:12px;padding:14px;margin-bottom:8px;border-left:4px solid}
+  .cat-chips{display:flex;overflow-x:auto;gap:8px;padding-bottom:10px;margin-bottom:10px}
+  .chip{padding:7px 14px;border-radius:20px;border:none;font-size:11px;font-weight:700;white-space:nowrap}
+
+  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#2A4A2A;color:#4ECDC4;padding:12px 24px;border-radius:30px;font-weight:800;font-size:13px;z-index:200;box-shadow:0 10px 20px rgba(0,0,0,0.3);display:none}
+  
+  /* Scan specific */
+  .scan-target{border:4px dashed #3A3A3A;color:#666;border-radius:166px;padding:60px 10px;text-align:center;font-weight:800;text-transform:uppercase;font-size:12px;letter-spacing:1px;cursor:pointer}
+  .scan-target:active{border-color:#FF6B35;color:#FF6B35}
+</style>
+</head>
+<body>
+
+<input type="file" accept="image/*" capture="camera" id="receiptCameraNative" style="display:none" onchange="handleScanSuccess(this)">
+
+<div id="toast" class="toast">✅ SAVED TO TRUCK #40 LOGS</div>
+<div id="app"></div>
+
+<script>
+const SHERRY = "Cummins0524@outlook.com";
+const STORAGE_KEY = "franks_diesel_data_v2_truck40";
+const CATS = [
+  {id:"fuel",   label:"Fuel",            icon:"⛽",color:"#FF6B35",ded:true},
+  {id:"maint",  label:"Maintenance",     icon:"🔧",color:"#4ECDC4",ded:true},
+  {id:"tolls",  label:"Tolls",           icon:"🛣️",color:"#FFE44D",ded:true},
+  {id:"meals",  label:"Per Diem",        icon:"🍽️",color:"#A8E6CF",ded:true},
+  {id:"lodging",label:"Lodging",         icon:"🏨",color:"#DDA0DD",ded:true},
+  {id:"permits",label:"Permits/Fees",    icon:"📋",color:"#F0A500",ded:true},
+  {id:"scales", label:"Scales",          icon:"⚖️",color:"#FFB3BA",ded:true},
+  {id:"wash",   label:"Truck Wash",      icon:"🚿",color:"#B0E0E6",ded:true},
+  {id:"amazon", label:"Supplies",        icon:"📦",color:"#FF9900",ded:true},
+  {id:"misc",   label:"Misc",            icon:"🗂️",color:"#AAAAAA",ded:false},
+];
+const QUARTERS=[
+  {label:"Q1",name:"Jan-Mar",months:[0,1,2]},
+  {label:"Q2",name:"Apr-Jun",months:[3,4,5]},
+  {label:"Q3",name:"Jul-Sep",months:[6,7,8]},
+  {label:"Q4",name:"Oct-Dec",months:[9,10,11]},
+];
+
+// ── State Management ──
+let receipts = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+let modal = null;
+let addForm = {date: today(), cat:'fuel', amount:'', vendor:'', notes:'', gallons:''};
+let scanStatus = 'idle'; // idle, capturing, simulating
+let filterCat = 'all';
+let searchTxt = '';
+let selQ = curQ();
+
+function today(){ return new Date().toISOString().split('T')[0]; }
+function curQ(){ return QUARTERS.findIndex(q=>q.months.includes(new Date().getMonth())); }
+function fmt(n){ return '$'+Number(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+function cat(id){ return CATS.find(c=>c.id===id); }
+
+function saveToDisk(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(receipts));
+  showToast();
+  render();
+}
+
+function showToast(){
+  const t = document.getElementById('toast');
+  t.style.display = 'block';
+  setTimeout(()=> t.style.display = 'none', 2500);
+}
+
+function render(){
+  const q = QUARTERS[curQ()];
+  const qR = receipts.filter(r=>QUARTERS[curQ()].months.includes(new Date(r.date+'T12:00:00').getMonth()));
+  const qDed = qR.filter(r=>cat(r.cat)?.ded).reduce((s,r)=>s+Number(r.amount),0);
+  const qGals = qR.filter(r=>r.cat==='fuel').reduce((s,r)=>s+Number(r.gallons||0),0);
+  const allTot = receipts.reduce((s,r)=>s+Number(r.amount),0);
+
+  let html = `
+  <div style="background:#000;padding:16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10">
+    <div>
+      <div style="font-size:18px;font-weight:900;color:#FF6B35;letter-spacing:1px">TRUCK #40 SCANNER</div>
+      <div style="font-size:10px;color:#666;letter-spacing:1px;font-weight:800">FRANK MULKEY · SOUTHAVEN, MS</div>
+    </div>
+    <button class="btn" style="width:auto;padding:8px 12px;background:#222;border:1px solid #FF6B35;border-radius:8px;color:#FF6B35;font-size:11px;margin:0" onclick="openList()">🧾 ${receipts.length}</button>
+  </div>
+
+  <div class="stat-strip">
+    <div class="stat-box">
+      <div class="stat-lbl">YTD SPEND</div>
+      <div class="stat-val" style="color:#FF6B35">${fmt(allTot)}</div>
+    </div>
+    <div style="width:1px;background:#333"></div>
+    <div class="stat-box">
+      <div class="stat-lbl">${q.label} DEDUCTIBLE</div>
+      <div class="stat-val" style="color:#4ECDC4">${fmt(qDed)}</div>
+      <div class="stat-sub">${qGals.toFixed(1)} Total Gal</div>
+    </div>
+    <div class="stat-box" style="display:flex;align-items:center;justify-content:flex-end">
+      <button onclick="openEmail()" style="background:#2A4A2A;border:none;border-radius:8px;color:#FFF;padding:10px;font-size:10px;font-weight:800;cursor:pointer">SEND TO<br>SHERRY</button>
+    </div>
+  </div>
+
+  <div class="grid">`;
+
+  CATS.forEach(c=>{
+    const rts = receipts.filter(r=>r.cat===c.id);
+    const tot = rts.reduce((s,r)=>s+Number(r.amount),0);
+    html += `<button class="tile" onclick="openAdd('${c.id}')">
+      ${rts.length>0?`<div class="badge" style="background:${c.color}">${rts.length}</div>`:''}
+      <div class="tile-icon">${c.icon}</div>
+      <div class="tile-label">${c.label}</div>
+      ${tot>0?`<div class="tile-amt" style="color:${c.color}">${fmt(tot)}</div>`:`<div class="tile-amt" style="color:#CCC">TAP TO ADD</div>`}
+    </button>`;
+  });
+
+  html += `</div>
+  <button onclick="openScan()" style="position:fixed;bottom:25px;right:25px;width:75px;height:75px;border-radius:50%;background:#FF6B35;border:5px solid #fff;font-size:38px;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:50">📸</button>`;
+
+  if(modal==='add')  html += renderAdd();
+  if(modal==='email') html += renderEmail();
+  if(modal==='list') html += renderList();
+  if(modal==='scan') html += renderScan();
+
+  document.getElementById('app').innerHTML = html;
+}
+
+function renderScan(){
+  return `<div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+        <div class="sheet-title">SCAN RECEIPT</div>
+        <button onclick="closeModal()" style="background:none;border:none;color:#555;font-size:28px">&times;</button>
+      </div>
+      
+      ${scanStatus === 'simulating' ? `
+        <div style="text-align:center;padding:30px;color:#888">
+          <div style="font-size:24px;margin-bottom:10px">⏳</div>
+          <div style="font-weight:800;font-size:12px;text-transform:uppercase;color:#4ECDC4">Simulating AI Scan...</div>
+          <div style="font-size:10px;color:#444;margin-top:4px">(Pre-filling form)</div>
+        </div>
+      ` : `
+        <div class="scan-target" onclick="triggerNativeCamera()">
+          <div style="font-size:60px;margin-bottom:15px">📸</div>
+          TAP TO TAKE PHOTO
+        </div>
+      `}
+      
+      <div style="text-align:center;margin-top:20px;color:#444;font-size:10px">
+        (AI scanning is simulated due to browser security restrictions.<br>Pre-filled data should be verified before saving.)
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderAdd(){
+  const c = cat(addForm.cat);
+  const chips = CATS.map(ct=>`<button class="chip" style="background:${addForm.cat===ct.id?ct.color:'#333'};color:${addForm.cat===ct.id?'#000':'#999'}" onclick="addForm.cat='${ct.id}';render()">${ct.icon} ${ct.label}</button>`).join('');
+  return `<div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+        <div class="sheet-title">ADD ${c.label}</div>
+        <button onclick="closeModal()" style="background:none;border:none;color:#555;font-size:28px">&times;</button>
+      </div>
+      
+      <button class="btn-inline-scan" onclick="openScan()">OR... 📸 SCAN WITH CAMERA</button>
+      
+      <div class="cat-chips">${chips}</div>
+      
+      <label class="lbl">Vendor / Location</label>
+      <input class="inp" id="inpVendor" placeholder="e.g. Love's, Pilot" value="${addForm.vendor}" oninput="addForm.vendor=this.value">
+      
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <label class="lbl">Amount ($)</label>
+          <input class="inp" id="inpAmount" type="number" step="0.01" placeholder="0.00" value="${addForm.amount}" oninput="addForm.amount=this.value">
+        </div>
+        ${addForm.cat==='fuel'?`
+        <div style="flex:1">
+          <label class="lbl">Gallons</label>
+          <input class="inp" id="inpGallons" type="number" step="0.001" placeholder="0.000" value="${addForm.gallons}" oninput="addForm.gallons=this.value">
+        </div>`:''}
+      </div>
+
+      <label class="lbl">Date</label>
+      <input class="inp" type="date" value="${addForm.date}" oninput="addForm.date=this.value">
+
+      <label class="lbl">Notes</label>
+      <textarea class="inp" id="inpNotes" rows="2" style="resize:none" oninput="addForm.notes=this.value">${addForm.notes}</textarea>
+      
+      <button class="btn btn-orange" style="margin-top:20px" onclick="saveManual()">SAVE RECEIPT</button>
+    </div>
+  </div>`;
+}
+
+function renderList(){
+  let filtered = filterCat==='all' ? receipts : receipts.filter(r=>r.cat===filterCat);
+  if(searchTxt) filtered = filtered.filter(r=>r.vendor.toLowerCase().includes(searchTxt.toLowerCase()));
+  
+  const rows = filtered.map(r=>{
+    const c = cat(r.cat);
+    return `<div class="receipt-row" style="background:#222;border-left-color:${c.color}">
+      <div style="display:flex;justify-content:space-between">
+        <div>
+          <div style="font-weight:800;color:#FFF">${r.vendor}</div>
+          <div style="font-size:11px;color:#666">${r.date} · ${c.label} ${r.gallons?`(${r.gallons} gal)` : ''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:900;color:#FF6B35">${fmt(r.amount)}</div>
+          <button onclick="deleteReceipt(${r.id})" style="background:none;border:none;color:#444;font-size:10px;margin-top:4px">DELETE</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div style="display:flex;justify-content:space-between;margin-bottom:15px">
+        <div class="sheet-title">ALL RECEIPTS</div>
+        <button onclick="closeModal()" style="background:none;border:none;color:#555;font-size:28px">&times;</button>
+      </div>
+      <button class="btn btn-outline" onclick="downloadCSV()" style="font-size:10px;padding:8px;margin-bottom:15px">📂 EXPORT CSV FOR SHERRY</button>
+      <input class="inp" placeholder="🔍 Search vendor..." oninput="searchTxt=this.value;render()">
+      <div style="margin-top:15px">${rows || '<div style="text-align:center;padding:40px;color:#444">EMPTY LOG</div>'}</div>
+    </div>
+  </div>`;
+}
+
+function renderEmail(){
+  const yr = new Date().getFullYear();
+  const q = QUARTERS[selQ];
+  const qR = receipts.filter(r=>q.months.includes(new Date(r.date+'T12:00:00').getMonth()));
+  const tot = qR.reduce((s,r)=>s+Number(r.amount),0);
+  const opts = QUARTERS.map((q,i)=>`<option value="${i}" ${i===selQ?'selected':''}>${q.label} ${yr}</option>`).join('');
+  
+  return `<div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-title">EMAIL SHERRY</div>
+      <label class="lbl">Select Quarter</label>
+      <select class="inp" onchange="selQ=parseInt(this.value);render()">${opts}</select>
+      <div style="background:#111;padding:15px;border-radius:10px;margin:15px 0">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span>Receipts:</span><b>${qR.length}</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#4ECDC4"><span>Deductible:</span><b>${fmt(tot)}</b></div>
+      </div>
+      <button class="btn btn-orange" onclick="sendEmail()">📧 OPEN EMAIL</button>
+      <button class="btn btn-dark" onclick="closeModal()">CANCEL</button>
+    </div>
+  </div>`;
+}
+
+// ── Functions ──
+function openAdd(catId){ addForm={date:today(),cat:catId,amount:'',vendor:'',notes:'',gallons:''}; modal='add'; render(); }
+function openScan(){ modal='scan'; scanStatus='idle'; render(); }
+function triggerNativeCamera(){ document.getElementById('receiptCameraNative').click(); }
+
+// Simulated AI Scan (because frontend only)
+function handleScanSuccess(input){
+  if (input.files && input.files[0]) {
+    scanStatus = 'simulating';
+    render();
+    
+    // Mimic processing time
+    setTimeout(() => {
+      // Dummy data fill - simulating success
+      addForm={
+        date:today(),
+        cat:'fuel', // AI guessed Fuel
+        amount:'149.50',
+        vendor:'Pilot Travel Center #40',
+        notes:'(Simulated Scan - Verify Data)',
+        gallons:'51.234'
+      };
+      modal='add'; 
+      scanStatus='idle';
+      render();
+      
+      // Quick visual highlight of AI fields
+      document.getElementById('inpVendor').style.borderColor='#4ECDC4';
+      document.getElementById('inpAmount').style.borderColor='#4ECDC4';
+      setTimeout(()=>{
+        document.getElementById('inpVendor').style.borderColor='#3A3A3A';
+        document.getElementById('inpAmount').style.borderColor='#3A3A3A';
+      }, 1200);
+      
+    }, 1500);
+  }
+}
+
+function openEmail(){ modal='email'; render(); }
+function openList(){ modal='list'; render(); }
+function closeModal(){ modal=null; render(); }
+
+function saveManual(){
+  if(!addForm.amount || !addForm.vendor) return alert("Need Amount & Vendor");
+  receipts.unshift({id:Date.now(), ...addForm});
+  modal=null;
+  saveToDisk();
+}
+
+function deleteReceipt(id){
+  if(confirm("Delete this receipt?")){
+    receipts = receipts.filter(r=>r.id!==id);
+    saveToDisk();
+  }
+}
+
+function downloadCSV(){
+  let csv = "Date,Category,Vendor,Amount,Gallons,Notes\n";
+  receipts.forEach(r => {
+    csv += `${r.date},${r.cat},"${r.vendor}",${r.amount},${r.gallons || 0},"${r.notes}"\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.setAttribute('href', url);
+  a.setAttribute('download', `truck-40-expenses-${today()}.csv`);
+  a.click();
+}
+
+function sendEmail(){
+  const q = QUARTERS[selQ];
+  const qR = receipts.filter(r=>q.months.includes(new Date(r.date+'T12:00:00').getMonth()));
+  const tot = qR.reduce((s,r)=>s+Number(r.amount),0);
+  const body = `Hi Sherry,\n\nExpense Report for Truck #40\nQuarter: ${q.label}\nTotal: ${fmt(tot)}\n\nSent from Frank's Diesel Scanner.`;
+  window.location.href = `mailto:${SHERRY}?subject=${q.label} Expense Report - Frank Mulkey&body=${encodeURIComponent(body)}`;
+}
+
+render();
+</script>
+</body>
+</html>
