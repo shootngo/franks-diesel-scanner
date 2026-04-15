@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Frank's Diesel Scanner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Arial Narrow',Arial,sans-serif;background:#F2F0ED;min-height:100vh;max-width:480px;margin:0 auto}
+button:active{transform:scale(0.96)}
+input,select,textarea{font-family:inherit}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0.5)}
+select option{background:#111}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Top bar */
+#topbar{background:#1C1008;padding:14px 16px 10px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+#appTitle{font-size:18px;font-weight:900;color:#FF6B35;letter-spacing:2px;text-transform:uppercase}
+#appSub{font-size:10px;color:#555;letter-spacing:1px}
+#receiptsBtn{background:#2A1200;border:1px solid #FF6B35;border-radius:8px;color:#FF6B35;padding:7px 11px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;text-transform:uppercase}
+
+/* Stats strip */
+#statsStrip{background:#222;display:flex;padding:10px 14px;gap:8px;border-bottom:1px solid #2A2A2A}
+.stat{flex:1}
+.statLabel{font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase}
+.statVal{font-size:18px;font-weight:900}
+.statSub{font-size:9px;color:#444}
+#statDivider{width:1px;background:#333}
+#emailSherryBtn{background:#0E1A0E;border:1px solid #2A5A2A;border-radius:8px;color:#4ECDC4;padding:8px 10px;font-size:11px;font-weight:700;cursor:pointer;text-align:center;line-height:1.3;width:100%;display:block}
+
+/* Grid section */
+#gridLabel{padding:12px 16px 6px;font-size:11px;color:#888;letter-spacing:2px;text-transform:uppercase;font-weight:700}
+#catGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 10px 90px}
+.catCard{background:#fff;border:2px solid #E8E4E0;border-radius:14px;padding:16px 6px 12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;box-shadow:0 1px 4px rgba(0,0,0,0.06);position:relative;min-height:105px;width:100%}
+.catBadge{position:absolute;top:7px;right:7px;border-radius:10px;font-size:9px;font-weight:900;padding:2px 6px;line-height:1.4;color:#000}
+.catIcon{font-size:32px}
+.catName{font-size:11px;font-weight:700;color:#333;text-align:center;line-height:1.3}
+.catAmt{font-size:10px;font-weight:700}
+.catEmpty{font-size:10px;color:#CCC}
+
+/* Floating cam btn */
+#floatCam{position:fixed;bottom:22px;right:22px;width:62px;height:62px;border-radius:31px;background:#FF6B35;border:none;font-size:26px;cursor:pointer;box-shadow:0 4px 16px rgba(255,107,53,0.5);display:flex;align-items:center;justify-content:center;z-index:50}
+
+/* Overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:100;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn 0.2s ease}
+.sheet{background:#1A1A1A;border-radius:16px 16px 0 0;width:100%;max-width:480px;padding:20px;border:1px solid #2A2A2A;border-bottom:none;max-height:88vh;overflow-y:auto}
+.sheetTitle{font-size:16px;font-weight:900;color:#FF6B35;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.sheetHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.closeBtn{background:none;border:none;color:#666;font-size:22px;cursor:pointer;padding:0;line-height:1}
+.lbl{font-size:10px;color:#777;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px}
+.inp{width:100%;padding:11px 12px;background:#111;border:1px solid #3A3A3A;border-radius:8px;color:#EEE8E0;font-size:14px;box-sizing:border-box}
+.inp:focus{outline:none;border-color:#FF6B35}
+.mbtn{width:100%;padding:13px;border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-bottom:8px;display:block;font-family:inherit}
+.divider{display:flex;align-items:center;gap:8px;color:#333;margin-bottom:14px}
+.divLine{flex:1;height:1px;background:#2A2A2A}
+.divText{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#555}
+.catPillWrap{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.catPill{padding:5px 10px;border-radius:20px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.previewImg{width:100%;border-radius:8px;margin-bottom:12px;max-height:160px;object-fit:cover;display:block}
+.resultBox{background:#0D2010;border:1px solid #4ECDC4;border-radius:8px;padding:12px;margin-bottom:14px}
+.resultRow{font-size:13px;color:#CCC;margin-bottom:2px}
+.filterPills{display:flex;gap:5px;overflow-x:auto;margin-bottom:10px;padding-bottom:4px}
+.fPill{padding:5px 12px;border-radius:20px;border:none;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit}
+.receiptRow{border-radius:8px;padding:10px 12px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:flex-start}
+.receiptRowLeft{flex:1}
+.receiptVendor{font-size:13px;font-weight:700;color:#EEE}
+.receiptMeta{font-size:10px;color:#555;margin-top:2px}
+.receiptNotes{font-size:11px;color:#666;margin-top:2px}
+.receiptDed{font-size:9px;color:#4ECDC4;margin-top:2px}
+.receiptAmt{font-size:16px;font-weight:900;color:#EEE;text-align:right}
+.removeBtn{font-size:10px;color:#555;background:none;border:none;cursor:pointer;padding:0;margin-top:3px;display:block;width:100%;text-align:right}
+.noResults{text-align:center;color:#444;padding:30px 0;font-size:13px}
+
+/* API key bar */
+#apiKeyBar{background:#2A1200;padding:8px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #3A2000}
+#apiKeyBar input{flex:1;padding:7px 10px;background:#111;border:1px solid #3A3A3A;border-radius:6px;color:#EEE8E0;font-size:12px}
+#apiKeyBar input:focus{outline:none;border-color:#FF6B35}
+#saveKeyBtn{padding:7px 12px;background:#FF6B35;border:none;border-radius:6px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+#keyStatus{font-size:10px;color:#4ECDC4;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div id="topbar">
+  <div>
+    <div id="appTitle">⛽ Frank's Diesel Scanner</div>
+    <div id="appSub">FRANK MULKEY · OWNER OPERATOR</div>
+  </div>
+  <button id="receiptsBtn" onclick="openList()">🧾 <span id="receiptCount">135</span></button>
+</div>
+
+<!-- API Key Bar -->
+<div id="apiKeyBar">
+  <input type="password" id="geminiKeyInput" placeholder="Paste Gemini API key to enable AI scanning…"/>
+  <button id="saveKeyBtn" onclick="saveApiKey()">Save Key</button>
+  <span id="keyStatus"></span>
+</div>
+
+<!-- Stats Strip -->
+<div id="statsStrip">
+  <div class="stat">
+    <div class="statLabel">YTD Total</div>
+    <div class="statVal" id="ytdVal" style="color:#FF6B35"></div>
+    <div class="statSub" id="ytdCount"></div>
+  </div>
+  <div id="statDivider"></div>
+  <div class="stat">
+    <div class="statLabel" id="qLabel"></div>
+    <div class="statVal" id="qDedVal" style="color:#4ECDC4"></div>
+    <div class="statSub" id="qCount"></div>
+  </div>
+  <div id="statDivider2" style="width:1px;background:#333"></div>
+  <div class="stat" style="display:flex;align-items:center;justify-content:center">
+    <button id="emailSherryBtn" onclick="openEmail()">📬 Email<br/>Sherry</button>
+  </div>
+</div>
+
+<!-- Grid Label -->
+<div id="gridLabel">Tap a Category to Add Receipt</div>
+
+<!-- Category Grid -->
+<div id="catGrid"></div>
+
+<!-- Floating Camera Button -->
+<button id="floatCam" onclick="openScanDirect()">📷</button>
+
+<!-- MODALS injected by JS -->
+<div id="modalContainer"></div>
+
+<script>
+const SHERRY_EMAIL = "Cummins0524@outlook.com";
+let geminiKey = '';
+
+const CATS = [
+  {id:"fuel",    label:"Fuel",             icon:"⛽", color:"#FF6B35", deductible:true},
+  {id:"maint",   label:"Maintenance",      icon:"🔧", color:"#4ECDC4", deductible:true},
+  {id:"tolls",   label:"Tolls",            icon:"🛣️", color:"#FFE44D", deductible:true},
+  {id:"meals",   label:"Per Diem / Meals", icon:"🍽️", color:"#A8E6CF", deductible:true},
+  {id:"lodging", label:"Lodging",          icon:"🏨", color:"#DDA0DD", deductible:true},
+  {id:"insure",  label:"Insurance",        icon:"🛡️", color:"#87CEEB", deductible:true},
+  {id:"permits", label:"Permits & Fees",   icon:"📋", color:"#F0A500", deductible:true},
+  {id:"phone",   label:"Phone / ELD",      icon:"📱", color:"#98D8C8", deductible:true},
+  {id:"scales",  label:"Scale Tickets",    icon:"⚖️", color:"#FFB3BA", deductible:true},
+  {id:"wash",    label:"Truck Wash",       icon:"🚿", color:"#B0E0E6", deductible:true},
+  {id:"amazon",  label:"Amazon / Online",  icon:"📦", color:"#FF9900", deductible:true},
+  {id:"supply",  label:"Supplies",         icon:"🧰", color:"#C8A96E", deductible:true},
+  {id:"misc",    label:"Miscellaneous",    icon:"🗂️", color:"#AAAAAA", deductible:false},
+];
+
+const QUARTERS = [
+  {label:"Q1",name:"Jan–Mar",months:[0,1,2]},
+  {label:"Q2",name:"Apr–Jun",months:[3,4,5]},
+  {label:"Q3",name:"Jul–Sep",months:[6,7,8]},
+  {label:"Q4",name:"Oct–Dec",months:[9,10,11]},
+];
+
+let receipts = [
+  {id:1,  date:"2025-12-13",cat:"fuel",   amount:73.05,  vendor:"Kroger",                    notes:""},
+  {id:2,  date:"2025-12-12",cat:"fuel",   amount:429.52, vendor:"Chevron",                   notes:""},
+  {id:3,  date:"2025-12-09",cat:"fuel",   amount:569.20, vendor:"QuikTrip",                  notes:""},
+  {id:4,  date:"2025-12-08",cat:"fuel",   amount:489.96, vendor:"Road Ranger",               notes:""},
+  {id:5,  date:"2025-12-04",cat:"fuel",   amount:659.05, vendor:"Shell",                     notes:""},
+  {id:6,  date:"2025-11-30",cat:"fuel",   amount:416.00, vendor:"Exxon",                     notes:""},
+  {id:7,  date:"2025-11-28",cat:"fuel",   amount:563.12, vendor:"Wild Bill's #1",            notes:""},
+  {id:8,  date:"2025-11-24",cat:"fuel",   amount:280.73, vendor:"QuikTrip",                  notes:""},
+  {id:9,  date:"2025-11-19",cat:"fuel",   amount:248.14, vendor:"Double Quick #92",          notes:""},
+  {id:10, date:"2025-11-18",cat:"fuel",   amount:492.07, vendor:"Wild Bill's #1",            notes:""},
+  {id:11, date:"2025-11-17",cat:"fuel",   amount:300.00, vendor:"Love's",                    notes:""},
+  {id:12, date:"2025-11-16",cat:"fuel",   amount:296.59, vendor:"Circle K",                  notes:""},
+  {id:13, date:"2025-11-10",cat:"fuel",   amount:659.02, vendor:"Fill N Go Truck Stop",      notes:""},
+  {id:14, date:"2025-11-06",cat:"fuel",   amount:200.82, vendor:"Pilot",                     notes:""},
+  {id:15, date:"2025-11-06",cat:"fuel",   amount:655.92, vendor:"Wild Bill's #1",            notes:""},
+  {id:16, date:"2025-11-04",cat:"fuel",   amount:474.60, vendor:"Wild Bill's #1",            notes:""},
+  {id:17, date:"2025-10-31",cat:"fuel",   amount:50.35,  vendor:"Kroger",                    notes:""},
+  {id:18, date:"2025-10-31",cat:"fuel",   amount:674.20, vendor:"Hucks",                     notes:""},
+  {id:19, date:"2025-10-29",cat:"fuel",   amount:747.36, vendor:"TA Express Jonesboro",      notes:"#0448"},
+  {id:20, date:"2025-10-28",cat:"fuel",   amount:607.72, vendor:"Travel Centers of America", notes:""},
+  {id:21, date:"2025-10-23",cat:"fuel",   amount:550.09, vendor:"Fill N Go Truck Stop",      notes:""},
+  {id:22, date:"2025-10-21",cat:"fuel",   amount:702.22, vendor:"Weigel's",                  notes:""},
+  {id:23, date:"2025-10-19",cat:"fuel",   amount:623.20, vendor:"Casey's",                   notes:""},
+  {id:24, date:"2025-10-14",cat:"fuel",   amount:658.18, vendor:"Fill N Go Truck Stop",      notes:""},
+  {id:25, date:"2025-10-09",cat:"fuel",   amount:641.44, vendor:"Road Ranger",               notes:""},
+  {id:26, date:"2025-10-07",cat:"fuel",   amount:579.79, vendor:"Double Quick",              notes:""},
+  {id:27, date:"2025-10-07",cat:"fuel",   amount:149.60, vendor:"TA Express",                notes:""},
+  {id:28, date:"2025-10-05",cat:"fuel",   amount:144.64, vendor:"Exxon",                     notes:""},
+  {id:29, date:"2025-10-05",cat:"fuel",   amount:575.94, vendor:"Exxon",                     notes:""},
+  {id:30, date:"2025-10-03",cat:"fuel",   amount:729.71, vendor:"Travel Centers of America", notes:""},
+  {id:31, date:"2025-09-25",cat:"fuel",   amount:649.97, vendor:"Exxon",                     notes:""},
+  {id:32, date:"2025-09-22",cat:"fuel",   amount:664.26, vendor:"Fill N Go Travel Center",   notes:""},
+  {id:33, date:"2025-09-16",cat:"fuel",   amount:309.29, vendor:"Travel Centers of America", notes:""},
+  {id:34, date:"2025-09-15",cat:"fuel",   amount:383.90, vendor:"Weigel's",                  notes:""},
+  {id:35, date:"2025-09-14",cat:"fuel",   amount:51.37,  vendor:"Weigel's",                  notes:""},
+  {id:36, date:"2025-09-14",cat:"fuel",   amount:556.04, vendor:"Weigel's",                  notes:""},
+  {id:37, date:"2025-09-11",cat:"fuel",   amount:419.54, vendor:"Shell",                     notes:""},
+  {id:38, date:"2025-09-10",cat:"fuel",   amount:286.21, vendor:"Exxon",                     notes:""},
+  {id:39, date:"2025-09-09",cat:"fuel",   amount:551.67, vendor:"Exxon",                     notes:""},
+  {id:40, date:"2025-09-08",cat:"fuel",   amount:464.72, vendor:"Casey's",                   notes:""},
+  {id:41, date:"2025-09-08",cat:"fuel",   amount:137.08, vendor:"Casey's",                   notes:""},
+  {id:42, date:"2025-09-04",cat:"fuel",   amount:503.81, vendor:"Petroleum #430664",         notes:""},
+  {id:43, date:"2025-09-03",cat:"fuel",   amount:164.95, vendor:"Exxon",                     notes:""},
+  {id:44, date:"2025-09-02",cat:"fuel",   amount:270.41, vendor:"Wild Bill's",               notes:""},
+  {id:45, date:"2025-09-01",cat:"fuel",   amount:68.83,  vendor:"Raceway",                   notes:""},
+  {id:46, date:"2025-08-28",cat:"fuel",   amount:321.09, vendor:"QuikTrip",                  notes:""},
+  {id:47, date:"2025-08-28",cat:"fuel",   amount:36.04,  vendor:"QuikTrip",                  notes:""},
+  {id:48, date:"2025-08-27",cat:"fuel",   amount:175.00, vendor:"QuikTrip",                  notes:""},
+  {id:49, date:"2025-08-25",cat:"fuel",   amount:498.28, vendor:"Maverik",                   notes:""},
+  {id:50, date:"2025-08-22",cat:"fuel",   amount:486.15, vendor:"Chevron",                   notes:""},
+  {id:51, date:"2025-08-21",cat:"fuel",   amount:34.45,  vendor:"Alex Truck Stop",           notes:""},
+  {id:52, date:"2025-08-16",cat:"fuel",   amount:82.16,  vendor:"VeriFone",                  notes:""},
+  {id:53, date:"2025-08-12",cat:"fuel",   amount:50.00,  vendor:"Jordan's #50",              notes:""},
+  {id:54, date:"2025-08-09",cat:"fuel",   amount:66.38,  vendor:"Murphy USA",                notes:""},
+  {id:55, date:"2025-08-06",cat:"fuel",   amount:682.44, vendor:"Fill N Go Truck Stop",      notes:""},
+  {id:56, date:"2025-08-01",cat:"fuel",   amount:589.80, vendor:"Chevron",                   notes:""},
+  {id:57, date:"2025-07-30",cat:"fuel",   amount:675.85, vendor:"Speedway",                  notes:""},
+  {id:58, date:"2025-07-28",cat:"fuel",   amount:79.23,  vendor:"Kroger",                    notes:""},
+  {id:59, date:"2025-07-23",cat:"fuel",   amount:691.80, vendor:"Chevron",                   notes:""},
+  {id:60, date:"2025-07-18",cat:"fuel",   amount:436.45, vendor:"Chevron",                   notes:""},
+  {id:61, date:"2025-07-17",cat:"fuel",   amount:293.40, vendor:"TA Travel Center",          notes:""},
+  {id:62, date:"2025-07-16",cat:"fuel",   amount:709.28, vendor:"TA Travel Center",          notes:""},
+  {id:63, date:"2025-07-15",cat:"fuel",   amount:671.41, vendor:"Speedway",                  notes:""},
+  {id:64, date:"2025-07-11",cat:"fuel",   amount:508.53, vendor:"Fill N Go Truck Stop",      notes:""},
+  {id:65, date:"2025-07-10",cat:"fuel",   amount:241.76, vendor:"Shell",                     notes:""},
+  {id:66, date:"2025-07-08",cat:"fuel",   amount:440.86, vendor:"Marathon Gas",              notes:""},
+  {id:67, date:"2025-07-01",cat:"fuel",   amount:677.26, vendor:"Speedway",                  notes:""},
+  {id:68, date:"2025-06-30",cat:"fuel",   amount:62.83,  vendor:"Kroger",                    notes:""},
+  {id:69, date:"2025-06-30",cat:"fuel",   amount:170.00, vendor:"Brooks Travel Center",      notes:""},
+  {id:70, date:"2025-06-26",cat:"fuel",   amount:471.20, vendor:"Weigel's",                  notes:""},
+  {id:71, date:"2025-06-23",cat:"fuel",   amount:172.21, vendor:"Mud Flap",                  notes:""},
+  {id:72, date:"2025-06-22",cat:"fuel",   amount:444.34, vendor:"Chevron",                   notes:""},
+  {id:73, date:"2025-06-20",cat:"fuel",   amount:45.68,  vendor:"Raceway",                   notes:""},
+  {id:74, date:"2025-06-20",cat:"fuel",   amount:93.15,  vendor:"Pete's #47",                notes:""},
+  {id:75, date:"2025-06-20",cat:"fuel",   amount:528.07, vendor:"Speedway",                  notes:""},
+  {id:76, date:"2025-06-18",cat:"fuel",   amount:185.16, vendor:"Chevron",                   notes:""},
+  {id:77, date:"2025-06-17",cat:"fuel",   amount:607.32, vendor:"Chevron",                   notes:""},
+  {id:78, date:"2025-06-17",cat:"fuel",   amount:110.11, vendor:"Love's Travel Stop ATM",    notes:""},
+  {id:79, date:"2025-06-16",cat:"fuel",   amount:29.80,  vendor:"Circle K",                  notes:""},
+  {id:80, date:"2025-06-11",cat:"fuel",   amount:449.54, vendor:"Chevron",                   notes:""},
+  {id:81, date:"2025-06-09",cat:"fuel",   amount:493.06, vendor:"Fill N Go Truck Stop",      notes:""},
+  {id:82, date:"2025-06-03",cat:"fuel",   amount:576.50, vendor:"Shell",                     notes:""},
+  {id:83, date:"2025-05-29",cat:"fuel",   amount:390.33, vendor:"Chevron",                   notes:""},
+  {id:84, date:"2025-05-23",cat:"fuel",   amount:389.77, vendor:"Chevron",                   notes:""},
+  {id:85, date:"2025-05-22",cat:"fuel",   amount:572.37, vendor:"Road Ranger",               notes:""},
+  {id:86, date:"2025-05-20",cat:"fuel",   amount:467.25, vendor:"Fill N Go Truck Stop",      notes:""},
+  {id:87, date:"2025-05-19",cat:"fuel",   amount:71.02,  vendor:"Raceway",                   notes:""},
+  {id:88, date:"2025-05-14",cat:"fuel",   amount:427.19, vendor:"Wild Bill's #1",            notes:""},
+  {id:89, date:"2025-05-13",cat:"fuel",   amount:453.99, vendor:"Wild Bill's #1",            notes:""},
+  {id:90, date:"2025-05-08",cat:"fuel",   amount:289.94, vendor:"Fill N Go Truck Stop",      notes:""},
+  {id:91, date:"2025-05-07",cat:"fuel",   amount:399.63, vendor:"Wild Bill's #1",            notes:""},
+  {id:92, date:"2025-04-30",cat:"fuel",   amount:61.38,  vendor:"Casey's",                   notes:""},
+  {id:93, date:"2025-04-30",cat:"fuel",   amount:475.38, vendor:"Casey's",                   notes:""},
+  {id:94, date:"2025-04-30",cat:"fuel",   amount:244.97, vendor:"Wild Bill's #1",            notes:"Sherman MS"},
+  {id:95, date:"2025-04-29",cat:"fuel",   amount:296.30, vendor:"Wild Bill's #1",            notes:""},
+  {id:96, date:"2025-04-22",cat:"fuel",   amount:429.62, vendor:"Shell",                     notes:""},
+  {id:97, date:"2025-04-15",cat:"fuel",   amount:587.60, vendor:"Shell",                     notes:""},
+  {id:98, date:"2025-04-11",cat:"fuel",   amount:67.28,  vendor:"Casey's General",           notes:""},
+  {id:99, date:"2025-04-11",cat:"fuel",   amount:453.27, vendor:"Casey's",                   notes:""},
+  {id:100,date:"2025-04-09",cat:"fuel",   amount:500.00, vendor:"Brooks Travel Center",      notes:""},
+  {id:101,date:"2025-04-08",cat:"fuel",   amount:183.77, vendor:"Fill N Go Truck Stop",      notes:""},
+  {id:102,date:"2025-03-28",cat:"fuel",   amount:536.52, vendor:"Trex Mart",                 notes:""},
+  {id:103,date:"2025-03-26",cat:"fuel",   amount:554.85, vendor:"Fill N Go Truck Stop",      notes:""},
+  {id:104,date:"2025-03-26",cat:"fuel",   amount:67.31,  vendor:"Kroger",                    notes:""},
+  {id:105,date:"2025-03-24",cat:"fuel",   amount:699.89, vendor:"Double Quick #92",          notes:""},
+  {id:106,date:"2025-03-19",cat:"fuel",   amount:358.07, vendor:"Wild Bill's #1",            notes:""},
+  {id:107,date:"2025-03-18",cat:"fuel",   amount:487.68, vendor:"Truck Stop 44",             notes:""},
+  {id:108,date:"2025-03-17",cat:"fuel",   amount:665.61, vendor:"Wild Bill's #1",            notes:""},
+  {id:109,date:"2025-03-13",cat:"fuel",   amount:226.62, vendor:"Shell",                     notes:""},
+  {id:110,date:"2025-03-11",cat:"fuel",   amount:546.83, vendor:"Wild Bill's #1",            notes:""},
+  {id:111,date:"2025-03-05",cat:"fuel",   amount:676.28, vendor:"Road Ranger",               notes:""},
+  {id:112,date:"2025-02-27",cat:"fuel",   amount:738.10, vendor:"Winfield Truck Stop",       notes:""},
+  {id:113,date:"2025-02-26",cat:"fuel",   amount:529.41, vendor:"Road Ranger",               notes:""},
+  {id:114,date:"2025-02-25",cat:"fuel",   amount:590.39, vendor:"Road Ranger",               notes:""},
+  {id:115,date:"2025-02-23",cat:"fuel",   amount:63.91,  vendor:"Kroger Fuel",               notes:""},
+  {id:116,date:"2025-02-22",cat:"fuel",   amount:132.24, vendor:"TA Travel Center",          notes:""},
+  {id:117,date:"2025-02-20",cat:"fuel",   amount:26.74,  vendor:"Truck Stop",                notes:""},
+  {id:118,date:"2025-02-18",cat:"fuel",   amount:395.74, vendor:"Fill N Go Truck Stop",      notes:""},
+  {id:119,date:"2025-02-12",cat:"fuel",   amount:264.44, vendor:"Road Ranger",               notes:""},
+  {id:120,date:"2025-02-06",cat:"fuel",   amount:80.98,  vendor:"Exxon",                     notes:""},
+  {id:121,date:"2025-02-05",cat:"fuel",   amount:547.41, vendor:"Road Ranger",               notes:""},
+  {id:122,date:"2025-02-03",cat:"fuel",   amount:288.55, vendor:"Wild Bill's #1",            notes:""},
+  {id:123,date:"2025-01-31",cat:"fuel",   amount:44.07,  vendor:"Kroger",                    notes:""},
+  {id:124,date:"2025-01-30",cat:"fuel",   amount:603.66, vendor:"Chevron",                   notes:""},
+  {id:125,date:"2025-01-27",cat:"fuel",   amount:571.98, vendor:"Signal Food Store #110",    notes:""},
+  {id:126,date:"2025-01-20",cat:"fuel",   amount:402.35, vendor:"VeriFone",                  notes:""},
+  {id:127,date:"2025-12-01",cat:"amazon", amount:42.79,  vendor:"Amazon",                    notes:""},
+  {id:128,date:"2025-11-20",cat:"amazon", amount:12.82,  vendor:"Amazon",                    notes:""},
+  {id:129,date:"2025-11-15",cat:"amazon", amount:39.58,  vendor:"Amazon",                    notes:""},
+  {id:130,date:"2025-09-13",cat:"amazon", amount:64.60,  vendor:"Amazon",                    notes:""},
+  {id:131,date:"2025-07-09",cat:"amazon", amount:96.29,  vendor:"Amazon",                    notes:""},
+  {id:132,date:"2025-04-27",cat:"amazon", amount:76.59,  vendor:"Amazon",                    notes:""},
+  {id:133,date:"2025-02-07",cat:"permits",amount:876.93, vendor:"Nickey Transportation LLC",  notes:"Tractor payment"},
+  {id:134,date:"2025-01-24",cat:"permits",amount:876.93, vendor:"Nickey Transportation LLC",  notes:"Tractor payment"},
+  {id:135,date:"2025-01-10",cat:"permits",amount:876.93, vendor:"Nickey Transportation LLC",  notes:"Tractor payment"},
+];
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const fmt   = n => "$" + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,",");
+const today = () => new Date().toISOString().split("T")[0];
+const curQ  = () => QUARTERS.findIndex(q => q.months.includes(new Date().getMonth()));
+const cat   = id => CATS.find(c=>c.id===id);
+
+function saveApiKey() {
+  const v = document.getElementById('geminiKeyInput').value.trim();
+  if (!v) return;
+  geminiKey = v;
+  document.getElementById('keyStatus').textContent = '✓ Key saved';
+  document.getElementById('geminiKeyInput').value = '';
+}
+
+// ── Stats ──────────────────────────────────────────────────────────────────
+function updateStats() {
+  const yr    = new Date().getFullYear();
+  const qi    = curQ();
+  const q     = QUARTERS[qi];
+  const allTot = receipts.reduce((s,r)=>s+r.amount,0);
+  const qR    = receipts.filter(r=>q.months.includes(new Date(r.date+"T12:00:00").getMonth()));
+  const qDed  = qR.filter(r=>cat(r.cat)?.deductible).reduce((s,r)=>s+r.amount,0);
+
+  document.getElementById('ytdVal').textContent   = fmt(allTot);
+  document.getElementById('ytdCount').textContent = receipts.length + " receipts";
+  document.getElementById('qLabel').textContent   = q.label + " Deductible";
+  document.getElementById('qDedVal').textContent  = fmt(qDed);
+  document.getElementById('qCount').textContent   = qR.length + " receipts";
+  document.getElementById('receiptCount').textContent = receipts.length;
+}
+
+// ── Grid ───────────────────────────────────────────────────────────────────
+function renderGrid() {
+  const grid = document.getElementById('catGrid');
+  grid.innerHTML = '';
+  CATS.forEach(c => {
+    const amt   = receipts.filter(r=>r.cat===c.id).reduce((s,r)=>s+r.amount,0);
+    const count = receipts.filter(r=>r.cat===c.id).length;
+    const btn   = document.createElement('button');
+    btn.className = 'catCard';
+    btn.onclick   = () => openAdd(c.id);
+    btn.innerHTML = `
+      ${count>0?`<div class="catBadge" style="background:${c.color}">${count}</div>`:''}
+      <div class="catIcon">${c.icon}</div>
+      <div class="catName">${c.label}</div>
+      ${amt>0?`<div class="catAmt" style="color:${c.color}">${fmt(amt)}</div>`:'<div class="catEmpty">Tap to add</div>'}
+    `;
+    grid.appendChild(btn);
+  });
+}
+
+function refresh() { updateStats(); renderGrid(); }
+
+// ── Modal helpers ──────────────────────────────────────────────────────────
+function closeModal() {
+  const mc = document.getElementById('modalContainer');
+  mc.innerHTML = '';
+}
+
+function showModal(html) {
+  const mc = document.getElementById('modalContainer');
+  mc.innerHTML = `<div class="overlay" onclick="handleOverlayClick(event)">${html}</div>`;
+}
+
+function handleOverlayClick(e) {
+  if (e.target.classList.contains('overlay')) closeModal();
+}
+
+// ── Scan Modal ─────────────────────────────────────────────────────────────
+let scanState = { step:'pick', catId:'fuel', preview:null, result:null };
+
+function openScanDirect() { openScan('fuel'); }
+
+function openScan(catId) {
+  scanState = { step:'pick', catId, preview:null, result:null };
+  renderScan();
+}
+
+function renderScan() {
+  const c = cat(scanState.catId);
+  let inner = '';
+
+  if (scanState.step === 'pick') {
+    inner = `
+      <p style="font-size:13px;color:#888;margin-bottom:16px">Take a photo or choose from your gallery — AI reads it automatically.</p>
+      <label style="display:block;width:100%;padding:13px;background:#FF6B35;border-radius:10px;color:#fff;font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;text-align:center;box-sizing:border-box;margin-bottom:8px;position:relative">
+        📷 Take Photo
+        <input type="file" accept="image/*" capture="environment" style="position:absolute;opacity:0;width:100%;height:100%;top:0;left:0;cursor:pointer" onchange="handleScanFile(event)"/>
+      </label>
+      <label style="display:block;width:100%;padding:13px;background:#2A4A2A;border-radius:10px;color:#fff;font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;text-align:center;box-sizing:border-box;margin-bottom:8px;position:relative">
+        🖼️ Choose from Gallery
+        <input type="file" accept="image/*" style="position:absolute;opacity:0;width:100%;height:100%;top:0;left:0;cursor:pointer" onchange="handleScanFile(event)"/>
+      </label>
+      <button class="mbtn" style="background:#2A2A2A" onclick="closeModal()">Cancel</button>
+    `;
+  } else if (scanState.step === 'scanning') {
+    inner = `
+      ${scanState.preview?`<img src="${scanState.preview}" class="previewImg"/>`:''}
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:28px;display:inline-block;animation:spin 1s linear infinite">⏳</div>
+        <div style="color:#888;font-size:13px;margin-top:8px">Reading receipt…</div>
+      </div>
+    `;
+  } else if (scanState.step === 'done' && scanState.result) {
+    const r = scanState.result;
+    inner = `
+      ${scanState.preview?`<img src="${scanState.preview}" class="previewImg" style="max-height:130px"/>`:''}
+      <div class="resultBox">
+        <div style="color:#4ECDC4;font-weight:700;font-size:13px;margin-bottom:8px">✅ Receipt read!</div>
+        ${r.vendor?`<div class="resultRow"><b style="color:#888">Vendor:</b> ${r.vendor}</div>`:''}
+        ${r.amount?`<div class="resultRow"><b style="color:#888">Amount:</b> ${fmt(r.amount)}</div>`:''}
+        ${r.date?`<div class="resultRow"><b style="color:#888">Date:</b> ${r.date}</div>`:''}
+        ${r.notes?`<div class="resultRow"><b style="color:#888">Notes:</b> ${r.notes}</div>`:''}
+      </div>
+      <button class="mbtn" style="background:#FF6B35" onclick="saveScanResult()">✓ Save Receipt</button>
+      <button class="mbtn" style="background:#2A2A2A" onclick="resetScan()">Scan Again</button>
+    `;
+  } else if (scanState.step === 'err') {
+    inner = `
+      <div style="color:#FF6B35;margin-bottom:14px;font-size:13px">⚠️ Couldn't read it clearly. Try again with better lighting.</div>
+      <button class="mbtn" style="background:#FF6B35" onclick="resetScan()">Try Again</button>
+      <button class="mbtn" style="background:#2A2A2A" onclick="closeModal();openAdd('${scanState.catId}')">Enter Manually</button>
+    `;
+  }
+
+  showModal(`
+    <div class="sheet">
+      <div class="sheetHeader">
+        <div class="sheetTitle">📸 Scan Receipt</div>
+        <button class="closeBtn" onclick="closeModal()">×</button>
+      </div>
+      <div style="font-size:12px;color:${c?.color};margin-bottom:14px;font-weight:700">${c?.icon} ${c?.label}</div>
+      ${inner}
+    </div>
+  `);
+}
+
+function resetScan() {
+  scanState.step = 'pick';
+  scanState.preview = null;
+  scanState.result = null;
+  renderScan();
+}
+
+async function handleScanFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const b64 = ev.target.result.split(",")[1];
+    scanState.preview = ev.target.result;
+    scanState.step = 'scanning';
+    renderScan();
+    try {
+      if (!geminiKey) throw new Error('No API key');
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          contents:[{parts:[
+            {inline_data:{mime_type:file.type||"image/jpeg",data:b64}},
+            {text:`Parse this receipt. Return ONLY valid JSON, no markdown:
+{"vendor":"","amount":0.00,"date":"YYYY-MM-DD","cat":"${scanState.catId}","notes":""}
+cat options: fuel|maint|tolls|meals|lodging|insure|permits|phone|scales|wash|amazon|supply|misc
+Today: ${today()}`}
+          ]}]
+        })
+      });
+      const d = await res.json();
+      if (d.error) throw new Error(d.error.message);
+      const txt = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      scanState.result = JSON.parse(txt.replace(/```json|```/g,'').trim());
+      scanState.step = 'done';
+    } catch(err) {
+      console.error(err);
+      scanState.step = 'err';
+    }
+    renderScan();
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveScanResult() {
+  const r = scanState.result;
+  if (!r) return;
+  receipts.unshift({
+    id: Date.now(),
+    date: r.date || today(),
+    cat: r.cat || scanState.catId,
+    amount: parseFloat(r.amount) || 0,
+    vendor: r.vendor || '',
+    notes: r.notes || ''
+  });
+  refresh();
+  closeModal();
+}
+
+// ── Add Modal ──────────────────────────────────────────────────────────────
+let addForm = {};
+
+function openAdd(catId) {
+  addForm = { date:today(), cat:catId||'fuel', amount:'', vendor:'', notes:'' };
+  renderAdd();
+}
+
+function renderAdd() {
+  const c = cat(addForm.cat);
+  const ok = addForm.amount && addForm.vendor;
+  const pillsHtml = CATS.map(x=>`
+    <button class="catPill" onclick="addFormSet('cat','${x.id}')" style="background:${addForm.cat===x.id?x.color:'#2A2A2A'};color:${addForm.cat===x.id?'#000':'#999'}">
+      ${x.icon} ${x.label.split(' ')[0]}
+    </button>`).join('');
+
+  showModal(`
+    <div class="sheet">
+      <div class="sheetHeader">
+        <div class="sheetTitle">Add Receipt</div>
+        <button class="closeBtn" onclick="closeModal()">×</button>
+      </div>
+      <div style="font-size:12px;color:${c?.color};margin-bottom:14px;font-weight:700">${c?.icon} ${c?.label} · ${c?.deductible?'✓ Tax Deductible':'Not Deductible'}</div>
+
+      <button class="mbtn" style="background:#FF6B35;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px" onclick="closeModal();openScan('${addForm.cat}')">
+        📸 Scan Receipt with AI
+      </button>
+      <div class="divider"><div class="divLine"></div><span class="divText">or manual</span><div class="divLine"></div></div>
+
+      <label class="lbl">Category</label>
+      <div class="catPillWrap">${pillsHtml}</div>
+
+      <label class="lbl">Vendor / Location</label>
+      <input class="inp" value="${addForm.vendor}" placeholder="e.g. Pilot Flying J" oninput="addFormSet('vendor',this.value)" style="margin-bottom:10px"/>
+
+      <label class="lbl">Amount ($)</label>
+      <input class="inp" type="number" value="${addForm.amount}" placeholder="0.00" oninput="addFormSet('amount',this.value)" style="margin-bottom:10px"/>
+
+      <label class="lbl">Date</label>
+      <input class="inp" type="date" value="${addForm.date}" oninput="addFormSet('date',this.value)" style="margin-bottom:10px"/>
+
+      <label class="lbl">Notes (optional)</label>
+      <textarea class="inp" rows="2" placeholder="e.g. 87 gal, Memphis TN" oninput="addFormSet('notes',this.value)" style="resize:none;margin-bottom:16px">${addForm.notes}</textarea>
+
+      <button class="mbtn" style="background:${ok?'#FF6B35':'#2A2A2A'};color:${ok?'#fff':'#555'};cursor:${ok?'pointer':'default'}" onclick="submitAdd()">Save Receipt</button>
+    </div>
+  `);
+}
+
+function addFormSet(k, v) { addForm[k] = v; renderAdd(); }
+
+function submitAdd() {
+  if (!addForm.amount || !addForm.vendor) return;
+  receipts.unshift({
+    id: Date.now(),
+    date: addForm.date,
+    cat: addForm.cat,
+    amount: parseFloat(addForm.amount),
+    vendor: addForm.vendor,
+    notes: addForm.notes
+  });
+  refresh();
+  closeModal();
+}
+
+// ── List Modal ─────────────────────────────────────────────────────────────
+let listFilter = 'all', listSearch = '';
+
+function openList() {
+  listFilter = 'all'; listSearch = '';
+  renderList();
+}
+
+function renderList() {
+  const used = CATS.filter(c=>receipts.some(r=>r.cat===c.id));
+  let filtered = listFilter==='all' ? [...receipts] : receipts.filter(r=>r.cat===listFilter);
+  if (listSearch) filtered = filtered.filter(r=>
+    r.vendor.toLowerCase().includes(listSearch.toLowerCase()) ||
+    r.notes.toLowerCase().includes(listSearch.toLowerCase())
+  );
+  const total = filtered.reduce((s,r)=>s+r.amount,0);
+
+  const filterPills = `
+    <button class="fPill" style="background:${listFilter==='all'?'#FF6B35':'#2A2A2A'};color:#fff" onclick="setListFilter('all')">All</button>
+    ${used.map(c=>`<button class="fPill" style="background:${listFilter===c.id?c.color:'#2A2A2A'};color:${listFilter===c.id?'#000':'#999'}" onclick="setListFilter('${c.id}')">${c.icon} ${c.label.split(' ')[0]}</button>`).join('')}
+  `;
+
+  const rows = filtered.map((r,i)=>{
+    const c = cat(r.cat);
+    return `
+      <div class="receiptRow" style="background:${i%2===0?'#1C1C1C':'#181818'};border-left:3px solid ${c?.color||'#444'}">
+        <div class="receiptRowLeft">
+          <div class="receiptVendor">${r.vendor}</div>
+          <div class="receiptMeta">${r.date} · <span style="color:${c?.color}">${c?.icon} ${c?.label}</span></div>
+          ${r.notes?`<div class="receiptNotes">${r.notes}</div>`:''}
+          ${c?.deductible?'<div class="receiptDed">✓ TAX DEDUCTIBLE</div>':''}
+        </div>
+        <div style="margin-left:10px">
+          <div class="receiptAmt">${fmt(r.amount)}</div>
+          <button class="removeBtn" onclick="deleteReceipt(${r.id})">✕ remove</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  showModal(`
+    <div class="sheet">
+      <div class="sheetHeader">
+        <div class="sheetTitle">🧾 Receipts (${receipts.length})</div>
+        <button class="closeBtn" onclick="closeModal()">×</button>
+      </div>
+      <input class="inp" value="${listSearch}" placeholder="🔍 Search vendor or notes…" oninput="setListSearch(this.value)" style="margin-bottom:10px"/>
+      <div class="filterPills">${filterPills}</div>
+      <div style="font-size:11px;color:#555;margin-bottom:10px">${filtered.length} receipts · ${fmt(total)}</div>
+      ${rows || '<div class="noResults">No receipts found</div>'}
+    </div>
+  `);
+}
+
+function setListFilter(f) { listFilter = f; renderList(); }
+function setListSearch(v) { listSearch = v; renderList(); }
+function deleteReceipt(id) { receipts = receipts.filter(r=>r.id!==id); refresh(); renderList(); }
+
+// ── Email Modal ────────────────────────────────────────────────────────────
+let emailQ = curQ();
+
+function openEmail() { emailQ = curQ(); renderEmail(); }
+
+function renderEmail() {
+  const yr = new Date().getFullYear();
+  const q  = QUARTERS[emailQ];
+  const qR = receipts.filter(r=>q.months.includes(new Date(r.date+"T12:00:00").getMonth()));
+  const tot = qR.reduce((s,r)=>s+r.amount,0);
+  const ded = qR.filter(r=>cat(r.cat)?.deductible).reduce((s,r)=>s+r.amount,0);
+
+  const preview = [
+    ['Receipts', qR.length, '#EEE'],
+    ['Total', fmt(tot), '#EEE'],
+    ['Deductible', fmt(ded), '#4ECDC4'],
+    ['Est. Savings', fmt(ded*0.25), '#FFE44D']
+  ].map(([k,v,c])=>`
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:12px;color:#777">${k}</span>
+      <span style="font-size:14px;font-weight:700;color:${c}">${v}</span>
+    </div>`).join('');
+
+  const qOptions = QUARTERS.map((q,i)=>`<option value="${i}" ${i===emailQ?'selected':''}>${q.label} ${yr} — ${q.name}</option>`).join('');
+
+  showModal(`
+    <div class="sheet">
+      <div class="sheetHeader">
+        <div class="sheetTitle">📧 Email Sherry</div>
+        <button class="closeBtn" onclick="closeModal()">×</button>
+      </div>
+      <div style="font-size:11px;color:#555;margin-bottom:16px">Cummins0524@outlook.com · Year Round Tax</div>
+      <label class="lbl">Quarter</label>
+      <select class="inp" onchange="emailQ=Number(this.value);renderEmail()" style="margin-bottom:16px">${qOptions}</select>
+      <div style="background:#111;border-radius:8px;padding:14px;margin-bottom:16px">
+        <div style="font-size:10px;color:#555;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Preview</div>
+        ${preview}
+      </div>
+      ${qR.length===0
+        ? `<div style="font-size:12px;color:#FF6B35;text-align:center;margin-bottom:12px">No receipts for ${q.label} yet</div>`
+        : `<button class="mbtn" style="background:#FF6B35" onclick="sendEmail()">📧 Open Email to Sherry</button>`
+      }
+      <div style="font-size:11px;color:#555;text-align:center;margin-bottom:10px">Opens Gmail or Outlook — just hit Send</div>
+      <button class="mbtn" style="background:#222" onclick="closeModal()">Close</button>
+    </div>
+  `);
+}
+
+function sendEmail() {
+  const yr = new Date().getFullYear();
+  const q  = QUARTERS[emailQ];
+  const qR = receipts.filter(r=>q.months.includes(new Date(r.date+"T12:00:00").getMonth()));
+  const tot = qR.reduce((s,r)=>s+r.amount,0);
+  const ded = qR.filter(r=>cat(r.cat)?.deductible).reduce((s,r)=>s+r.amount,0);
+
+  const catLines = CATS.map(c=>{
+    const rows=qR.filter(r=>r.cat===c.id); const t=rows.reduce((s,r)=>s+r.amount,0);
+    return t>0?`  ${c.icon} ${c.label.padEnd(22)} ${fmt(t).padStart(10)}  (${rows.length} receipt${rows.length>1?'s':''})`:'';
+  }).filter(Boolean).join('\n');
+
+  const detailLines = qR.map(r=>{
+    const c=cat(r.cat);
+    return `  ${r.date}  ${r.vendor.substring(0,22).padEnd(22)}  ${fmt(r.amount).padStart(9)}  ${c?.label}${r.notes?' — '+r.notes:''}`;
+  }).join('\n');
+
+  const subject = `${q.label} ${yr} Expense Report — Frank Mulkey, Owner Operator`;
+  const body = `Hi Sherry,
+
+Here is my ${q.label} ${yr} expense report (${q.name} ${yr}).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Total Expenses:          ${fmt(tot)}
+  Tax Deductible:          ${fmt(ded)}
+  Non-Deductible:          ${fmt(tot-ded)}
+  Est. Tax Savings (25%):  ${fmt(ded*0.25)}
+  Total Receipts:          ${qR.length}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BY CATEGORY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${catLines}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ALL RECEIPTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${detailLines}
+
+Please let me know if you need anything else.
+
+Thank you,
+Frank Mulkey
+Owner Operator`;
+
+  window.location.href = `mailto:${SHERRY_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+refresh();
+</script>
+</body>
+</html>
