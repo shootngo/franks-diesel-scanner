@@ -83,9 +83,9 @@ body{font-family:'Source Sans 3',sans-serif;background:#1a1a1a;color:#eee;min-he
 .rmbtn{background:#fef2f2;color:var(--red);border:none;border-radius:6px;width:34px;height:34px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700}
 .addbtn{background:var(--g100);border:1.5px dashed var(--bdr);border-radius:var(--rad);padding:8px;font-size:13px;font-weight:600;color:var(--g600);cursor:pointer;text-align:center;font-family:'Rajdhani',sans-serif}
 .addbtn:hover{background:#fff5f5;color:var(--red);border-color:var(--red)}
-.totbox{background:#3a3000;border:1px solid #ffd700;border-radius:var(--rad);padding:9px 12px;display:flex;align-items:center;justify-content:space-between}
-.totlbl{font-size:11px;color:#78350f;font-weight:600;letter-spacing:0.5px}
-.totval{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#78350f}
+.totbox{background:#2a2a2a;border:1px solid #ffd700;border-radius:var(--rad);padding:9px 12px;display:flex;align-items:center;justify-content:space-between}
+.totlbl{font-size:11px;color:#ffd700;font-weight:600;letter-spacing:0.5px}
+.totval{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#ffffff}
 
 /* ACTION BAR */
 .abar{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
@@ -161,11 +161,6 @@ body{font-family:'Source Sans 3',sans-serif;background:#1a1a1a;color:#eee;min-he
 .gasopt.on.gas-ok{background:#16a34a;border-color:#16a34a;color:#fff}
 .iremark{width:100%;border:1.5px solid #444;border-radius:8px;padding:10px 12px;font-size:15px;font-family:'Source Sans 3',sans-serif;outline:none;resize:vertical;min-height:90px;margin-top:6px;background:#333;color:#eee}
 .iremark:focus{border-color:var(--dkred)}
-.photobtn{background:#333;color:#fff;border:none;border-radius:8px;padding:12px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
-.pgrid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.pwrap{position:relative}
-.pimg{width:80px;height:80px;object-fit:cover;border-radius:6px;border:2px solid var(--g200)}
-.pdel{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
 .isend{background:var(--dkred);color:#fff;border:none;border-radius:8px;padding:14px;font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;cursor:pointer;width:100%;letter-spacing:1px;margin-top:4px}
 .infobar{background:#fff;border-radius:10px;border:1px solid var(--g200);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-around;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
 .infocell{text-align:center}
@@ -577,15 +572,6 @@ body{font-family:'Source Sans 3',sans-serif;background:#1a1a1a;color:#eee;min-he
     </div>
 
     <div class="inspcard">
-      <div class="inspcardh"><span class="inspcardt">Defect Photos</span></div>
-      <div class="inspcardb">
-        <button class="photobtn" onclick="triggerCam()">&nbsp;Take / Add Photo(s)</button>
-        <input type="file" id="cam" accept="image/*" capture="environment" style="display:none" onchange="addPhotos(event)">
-        <div class="pgrid" id="pgrid"></div>
-      </div>
-    </div>
-
-    <div class="inspcard">
       <div class="inspcardh"><span class="inspcardt">✉️ Email Inspection Report</span></div>
       <div class="inspcardb">
         <span class="eflbl">To</span>
@@ -593,7 +579,6 @@ body{font-family:'Source Sans 3',sans-serif;background:#1a1a1a;color:#eee;min-he
         <span class="eflbl">CC (optional)</span>
         <input type="email" class="efin" id="icc" placeholder="Your email address...">
         <button class="isend" onclick="sendInsp()">🖨️ Open Print View</button>
-        <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:6px">Attach photos manually from camera roll after email opens.</p>
       </div>
     </div>
   </div>
@@ -764,7 +749,80 @@ var CD={
 var CL=["Arcadia", "Bay Springs", "Bethlehem", "Dardanelle", "Dequeen", "Elgin IL", "Farmerville", "Lewiston", "Lincoln Fremont", "Lufkin", "Lumber", "Mar-Jac Jasper", "Maxson", "Milford", "Nacogdoches", "PH-Devonment", "Pasadena TX", "Pocahontas", "Pocola", "Selbyville", "Siler City", "Vi-Jon", "Wolf River"];
 var TL=["SD-94", "SD-5520", "SD-45", "SD-37", "ISO-144930", "ISO-144926", "ISO-144925", "ISO-144924", "ISO-144923", "ISO-144922", "ISO-134915", "ISO-134914", "ISO-134908", "ISO-134906", "DV-20201", "DV-18118"];
 
-var ast=null, idata={pre:{},post:{},pg:'',pog:'',photos:[]};
+var ast=null, idata={pre:{},post:{},pg:'',pog:''};
+
+// ─── GAS LEVEL ───────────────────────────────────────────────────────────────
+// LOW = Empty/1/8/1/4 → red. OK = 3/8 and above → green.
+var GAS_LOW = ['Empty','1/8','1/4'];
+function setGas(btn, trip, val) {
+  // Save value
+  if(trip==='pre') idata.pg=val; else idata.pog=val;
+  // Update button visuals in the correct row
+  var rowId = trip==='pre' ? 'preg' : 'postg';
+  var row = document.getElementById(rowId);
+  if(!row) return;
+  row.querySelectorAll('.gasopt').forEach(function(b){
+    b.classList.remove('on','gas-ok','gas-low');
+    b.style.background='';b.style.borderColor='';b.style.color='';
+  });
+  var isLow = GAS_LOW.indexOf(val) !== -1;
+  btn.classList.add('on');
+  if(isLow){
+    btn.style.background='#cc0000';btn.style.borderColor='#cc0000';btn.style.color='#fff';
+  } else {
+    btn.style.background='#16a34a';btn.style.borderColor='#16a34a';btn.style.color='#fff';
+  }
+  // Persist to localStorage
+  try{localStorage.setItem('idata_gas',JSON.stringify({pg:idata.pg,pog:idata.pog}));}catch(e){}
+}
+
+// ─── INSPECTION TOGGLES ──────────────────────────────────────────────────────
+function setInsp(el, trip, item, val) {
+  if(!idata[trip]) idata[trip]={};
+  idata[trip][item]=val;
+  // Persist
+  try{localStorage.setItem('idata_insp',JSON.stringify({pre:idata.pre,post:idata.post}));}catch(e){}
+}
+
+// ─── CLEAR FORM ──────────────────────────────────────────────────────────────
+function clrForm(){
+  if(!confirm('Clear all form data?')) return;
+  // Reset text inputs / selects
+  ['td','pki','csti','tki','bpay','thl','tw','atl','art','det','dtl','nts'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  // Reset product radio to PAA
+  var paa=document.getElementById('ptPAA'); if(paa) paa.checked=true;
+  // Reset calculated displays
+  ['gval','ttval'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='—';});
+  // Reset expense rows
+  var fe=document.getElementById('fe');if(fe)fe.innerHTML='<div class="rte"><input type="number" placeholder="$0.00" step="0.01" inputmode="decimal" oninput="calcExp(\'f\')" onchange="as()"></div>';
+  var re=document.getElementById('re');if(re)re.innerHTML='<div class="rte"><input type="number" placeholder="$0.00" step="0.01" inputmode="decimal" oninput="calcExp(\'r\')" onchange="as()"></div>';
+  ['ft','rt'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='$0.00';});
+  // Reset inspection data
+  idata={pre:{},post:{},pg:'',pog:''};
+  // Reset all radios in inspection overlay
+  document.querySelectorAll('.inspmover input[type=radio]').forEach(function(r){r.checked=false;});
+  // Reset gas buttons
+  ['preg','postg'].forEach(function(rid){
+    var row=document.getElementById(rid);
+    if(row) row.querySelectorAll('.gasopt').forEach(function(b){
+      b.classList.remove('on','gas-ok','gas-low');
+      b.style.background='';b.style.borderColor='';b.style.color='';
+    });
+  });
+  // Reset remarks
+  ['prerm','postrm'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  // Reset pickup display
+  upPk();
+  calcGal(); calcExp('f'); calcExp('r');
+  setTdy();
+}
+
+// ─── PDF / PRINT (alias for print view) ─────────────────────────────────────
+function dlPDF(){
+  openDispatchPrintView();
+}
 
 // CLOCK
 function tick(){var n=new Date();document.getElementById('clk').textContent=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});document.getElementById('dt').textContent=n.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric',year:'numeric'});}
@@ -938,12 +996,91 @@ window.addEventListener('load',function(){
   try{var et=acg('tk');var mt=TL.slice();for(var i=0;i<et.length;i++){if(mt.indexOf(et[i])===-1)mt.push(et[i]);}acs2('tk',mt);}catch(e){}
   try{var ec=acg('cst');var mc=CL.slice();for(var i=0;i<ec.length;i++){if(mc.indexOf(ec[i])===-1)mc.push(ec[i]);}acs2('cst',mc);}catch(e){}
   try{var s=localStorage.getItem('nad');if(s){var d=JSON.parse(s);if(d.pki||d.csti||d.tw){if(confirm('Restore your last unsaved session?'))lfd(d);}}}catch(e){}
+  // Restore gas level selections from localStorage
+  try{
+    var gs=localStorage.getItem('idata_gas');
+    if(gs){
+      var gp=JSON.parse(gs);
+      if(gp.pg){
+        var pBtn=document.querySelector('#preg .gasopt[onclick*="\'"+gp.pg+"\'"]');
+        if(!pBtn){
+          // fallback: find by text content
+          document.querySelectorAll('#preg .gasopt').forEach(function(b){if(b.textContent===gp.pg)pBtn=b;});
+        }
+        if(pBtn) setGas(pBtn,'pre',gp.pg);
+      }
+      if(gp.pog){
+        var poBtn=null;
+        document.querySelectorAll('#postg .gasopt').forEach(function(b){if(b.textContent===gp.pog)poBtn=b;});
+        if(poBtn) setGas(poBtn,'post',gp.pog);
+      }
+    }
+  }catch(e){}
 });
 
-// EMAIL
+// EMAIL — DISPATCH FORM
+// Builds a mailto: link with all trip data in the body.
+// mailto: works on every device without popup permission.
 function sendEmail(){
-  openDispatchPrintView();
   cm('meml');
+  document.body.style.overflow='';
+
+  var d = gfd();
+  var to  = (document.getElementById('eto')  && document.getElementById('eto').value)  || 'DKlein@nickeywarehouse.com';
+  var cc  = (document.getElementById('ecc')  && document.getElementById('ecc').value)  || '';
+  var sub = (document.getElementById('esub') && document.getElementById('esub').value) || 'Nickey Dispatch — Tanker Unload Notes';
+  var msg = (document.getElementById('emsg') && document.getElementById('emsg').value) || '';
+
+  // Collect expenses
+  var fuelTot = document.getElementById('ft') ? document.getElementById('ft').textContent : '$0.00';
+  var reimbTot = document.getElementById('rt') ? document.getElementById('rt').textContent : '$0.00';
+  var gv  = document.getElementById('gval')  ? document.getElementById('gval').textContent  : '—';
+  var tv  = document.getElementById('ttval') ? document.getElementById('ttval').textContent : '—';
+  var ptEl = document.querySelector('input[name="pt"]:checked');
+  var ptLabel = ptEl && ptEl.value==='superd' ? 'Super D (÷10)' : 'PAA (÷9.43)';
+
+  var body = '';
+  if(msg) body += msg + '\n\n';
+  body += '════════════════════════════════\n';
+  body += 'NICKEY TRANSPORTATION — DISPATCH\n';
+  body += '════════════════════════════════\n\n';
+  body += 'Date:          ' + (d.td||'—') + '\n';
+  body += 'Pickup #:      ' + (d.pki||'—') + '\n';
+  body += 'Customer:      ' + (d.csti||'—') + '\n';
+  body += 'Tanker #:      ' + (d.tki||'—') + '\n';
+  body += 'Product:       ' + ptLabel + '\n';
+  body += 'Base Pay:      ' + (d.bpay ? '$'+parseFloat(d.bpay).toFixed(2) : '—') + '\n';
+  body += 'Tank Limit:    ' + (d.thl ? d.thl+' gal' : '—') + '\n\n';
+  body += '── WEIGHT & GALLONS ──\n';
+  body += 'Tanker Weight: ' + (d.tw ? d.tw+' lbs' : '—') + '\n';
+  body += 'Tanker Gallons:' + gv + '\n';
+  body += 'Arrival Level: ' + (d.atl ? d.atl+' gal' : '—') + '\n';
+  body += 'Tank+Tanker Total: ' + tv + '\n\n';
+  body += '── TIMES ──\n';
+  body += 'Arrival:       ' + (d.art||'—') + '\n';
+  body += 'Departure:     ' + (d.det||'—') + '\n';
+  body += 'Depart Level:  ' + (d.dtl ? d.dtl+' gal' : '—') + '\n\n';
+  body += '── EXPENSES ──\n';
+  body += 'Fuel Total:    ' + fuelTot + '\n';
+  body += 'Reimb Total:   ' + reimbTot + '\n\n';
+  if(d.nts){
+    body += '── NOTES ──\n' + d.nts + '\n\n';
+  }
+  body += '────────────────────────────────\n';
+  body += 'Submitted by Frank Mulkey\n';
+
+  var mailto = 'mailto:' + encodeURIComponent(to)
+    + '?subject=' + encodeURIComponent(sub)
+    + (cc ? '&cc=' + encodeURIComponent(cc) : '')
+    + '&body=' + encodeURIComponent(body);
+
+  // Use a hidden <a> click — most reliable cross-platform method
+  var a = document.createElement('a');
+  a.href = mailto;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ document.body.removeChild(a); }, 500);
 }
 
 function openDispatchPrintView(){
@@ -1064,247 +1201,151 @@ function openDispatchPrintView(){
   html+='<div class="footer">Nicky Transportation &nbsp;&bull;&nbsp; '+(d.td||'')+'&nbsp;&bull;&nbsp;'+(d.csti||'')+'&nbsp;&bull;&nbsp; Created by Frank Mulkey</div>';
   html+='</body></html>';
 
-  var w=window.open('','_blank');
-  if(w){ w.document.write(html); w.document.close(); }
-  else { alert('Please allow pop-ups to open the print view.'); }
+  // data: URI — never blocked by popup blockers on any device
+  var a=document.createElement('a');
+  a.href='data:text/html;charset=utf-8,'+encodeURIComponent(html);
+  a.target='_blank';a.rel='noopener';a.style.display='none';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);},500);
 }
+// INSPECTION EMAIL — "Open Print View" button
+// FIX 1: idata key order was reversed. Correct: idata.pre[item], not idata[item].pre
+// FIX 2: window.open() is blocked on mobile. Now uses mailto: + data: URI (never blocked)
 function sendInsp(){
-  var toEl=document.getElementById('ito');
-  var ccEl=document.getElementById('icc');
-  var to=(toEl&&toEl.value)?toEl.value:'DKlein@nickeywarehouse.com';
-  var cc=ccEl?ccEl.value:'';
-  var d=gfd();
-  var its=['markerLights','placards','loadSec','bol','abs','landingGear','tires','hatches','lugNuts'];
-  var lbs=['Marker Lights','Placards','Load Securement','Bill of Lading / Paperwork','ABS','Landing Gear','Tires','Hatches & Cabinets Secure','Lug Nuts'];
+  var d = gfd();
+  var to  = (document.getElementById('ito') && document.getElementById('ito').value) || 'DKlein@nickeywarehouse.com';
+  var cc  = (document.getElementById('icc') && document.getElementById('icc').value) || '';
+  var its = ['markerLights','placards','loadSec','bol','abs','landingGear','tires','hatches','lugNuts'];
+  var lbs = ['Marker Lights','Placards','Load Securement','Bill of Lading / Paperwork','ABS','Landing Gear','Tires','Hatches & Cabinets Secure','Lug Nuts'];
+  var preRmk  = (document.getElementById('prerm')  && document.getElementById('prerm').value)  || '';
+  var postRmk = (document.getElementById('postrm') && document.getElementById('postrm').value) || '';
 
-  // Build HTML email body
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f8f8f8">';
-  html+='<div style="background:#8b0000;padding:16px 20px;border-radius:8px 8px 0 0">';
-  html+='<h2 style="color:#fff;margin:0;font-size:20px">🚛 NICKY TRANSPORTATION</h2>';
-  html+='<p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:13px;letter-spacing:1px;text-transform:uppercase">Super D Trailer Inspection Report</p>';
-  html+='</div>';
-  html+='<div style="background:#fff;padding:16px 20px;border:1px solid #ddd;border-top:none">';
-  html+='<table style="width:100%;font-size:13px;margin-bottom:16px"><tr><td style="padding:4px 0;color:#666;width:120px">Date:</td><td style="font-weight:bold">'+(d.td||'—')+'</td></tr>';
-  html+='<tr><td style="padding:4px 0;color:#666">Driver:</td><td style="font-weight:bold">Frank Mulkey</td></tr>';
-  html+='<tr><td style="padding:4px 0;color:#666">Tanker #:</td><td style="font-weight:bold">'+(d.tki||'—')+'</td></tr>';
-  html+='<tr><td style="padding:4px 0;color:#666">Customer:</td><td style="font-weight:bold">'+(d.csti||'—')+'</td></tr></table>';
-
-  // PRE-TRIP
-  html+='<h3 style="background:#8b0000;color:#fff;padding:8px 12px;border-radius:6px;font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px">Pre-Trip Inspection</h3>';
-  html+='<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
-  its.forEach(function(item,i){
-    var status=idata[item] ? idata[item].pre : null;
-    var isSafe = status==='safe';
-    var isConcern = status==='concern';
-    var bg = isSafe ? '#f0fdf4' : isConcern ? '#fff5f5' : '#fafafa';
-    var badge = isSafe 
-      ? '<span style="background:#16a34a;color:#fff;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold">✓ SAFE</span>'
-      : isConcern 
-      ? '<span style="background:#cc0000;color:#fff;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold">⚠ CONCERN</span>'
-      : '<span style="background:#94a3b8;color:#fff;padding:3px 10px;border-radius:12px;font-size:12px">— NOT CHECKED</span>';
-    html+='<tr style="background:'+bg+';border-bottom:1px solid #e2e8f0"><td style="padding:9px 12px;font-size:13px;font-weight:600">'+lbs[i]+'</td><td style="padding:9px 12px;text-align:right">'+badge+'</td></tr>';
-  });
-  html+='</table>';
-  
-  // Pre-trip gas and remarks
-  html+='<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px;margin-bottom:16px">';
-  html+='<span style="font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.5px">Gas Level (Pre-Trip): </span>';
-  html+='<strong>'+(idata.pg||'— Not Selected')+'</strong></div>';
-  
-  var preRmk = document.getElementById('prerm') ? document.getElementById('prerm').value : '';
-  if(preRmk){
-    html+='<div style="background:#fffbeb;border-left:4px solid #f59e0b;padding:10px 12px;margin-bottom:16px;border-radius:0 6px 6px 0">';
-    html+='<strong style="font-size:12px;color:#92400e;text-transform:uppercase">Pre-Trip Remarks:</strong>';
-    html+='<p style="margin:4px 0 0;font-size:13px">'+preRmk+'</p></div>';
-  }
-
-  // POST-TRIP
-  html+='<h3 style="background:#8b0000;color:#fff;padding:8px 12px;border-radius:6px;font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px">Post-Trip Inspection</h3>';
-  html+='<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
-  its.forEach(function(item,i){
-    var status=idata[item] ? idata[item].post : null;
-    var isSafe = status==='safe';
-    var isConcern = status==='concern';
-    var bg = isSafe ? '#f0fdf4' : isConcern ? '#fff5f5' : '#fafafa';
-    var badge = isSafe 
-      ? '<span style="background:#16a34a;color:#fff;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold">✓ SAFE</span>'
-      : isConcern 
-      ? '<span style="background:#cc0000;color:#fff;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold">⚠ CONCERN</span>'
-      : '<span style="background:#94a3b8;color:#fff;padding:3px 10px;border-radius:12px;font-size:12px">— NOT CHECKED</span>';
-    html+='<tr style="background:'+bg+';border-bottom:1px solid #e2e8f0"><td style="padding:9px 12px;font-size:13px;font-weight:600">'+lbs[i]+'</td><td style="padding:9px 12px;text-align:right">'+badge+'</td></tr>';
-  });
-  html+='</table>';
-
-  // Post-trip gas and remarks
-  html+='<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px;margin-bottom:16px">';
-  html+='<span style="font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.5px">Gas Level (Post-Trip): </span>';
-  html+='<strong>'+(idata.pog||'— Not Selected')+'</strong></div>';
-
-  var postRmk = document.getElementById('postrm') ? document.getElementById('postrm').value : '';
-  if(postRmk){
-    html+='<div style="background:#fffbeb;border-left:4px solid #f59e0b;padding:10px 12px;margin-bottom:16px;border-radius:0 6px 6px 0">';
-    html+='<strong style="font-size:12px;color:#92400e;text-transform:uppercase">Post-Trip Remarks:</strong>';
-    html+='<p style="margin:4px 0 0;font-size:13px">'+postRmk+'</p></div>';
-  }
-
-  // Photos note
-  if(idata.photos.length>0){
-    html+='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 12px;margin-bottom:16px">';
-    html+='<strong style="color:#1e40af">'+idata.photos.length+' Photo(s) Attached</strong>';
-    html+='<p style="margin:4px 0 0;font-size:12px;color:#3730a3">Attach photos manually from your camera roll after email opens.</p></div>';
-  }
-
-  html+='<p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:20px">Nicky Transportation - Submitted by Frank Mulkey</p>';
-  html+='</div></body></html>';
-
-  // Since mailto can't send HTML, build a clean plain text version with symbols
-  // Build concerns summary first
+  // Build concerns list using CORRECT key order: idata.pre[item]
   var concerns = [];
   its.forEach(function(item,i){
-    if(idata[item] && idata[item].pre === 'concern') concerns.push('PRE: '+lbs[i]);
-    if(idata[item] && idata[item].post === 'concern') concerns.push('POST: '+lbs[i]);
+    if(idata.pre[item]==='concern')  concerns.push('PRE-TRIP:  '+lbs[i]);
+    if(idata.post[item]==='concern') concerns.push('POST-TRIP: '+lbs[i]);
   });
-  var body='NICKY TRANSPORTATION - TRAILER INSPECTION REPORT\n================================================\n';
-  body+='Date: '+(d.td||'-')+'\nDriver: Frank Mulkey\nTanker #: '+(d.tki||'-')+'\nCustomer: '+(d.csti||'-')+'\n\n';
+
+  // Plain-text email body
+  var body = '\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n';
+  body += 'NICKY TRANSPORTATION\nSuper D Trailer Inspection Report\n';
+  body += '\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\n';
+  body += 'Date:     ' + (d.td||'\u2014') + '\n';
+  body += 'Driver:   Frank Mulkey\n';
+  body += 'Tanker #: ' + (d.tki||'\u2014') + '\n';
+  body += 'Customer: ' + (d.csti||'\u2014') + '\n\n';
   if(concerns.length > 0){
-    body+='*** CONCERNS REQUIRING ATTENTION ***\n';
-    concerns.forEach(function(c){ body+='  ⚠ '+c+'\n'; });
-    body+='\n';
+    body += '\u26a0 CONCERNS REQUIRING ATTENTION\n';
+    body += '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n';
+    concerns.forEach(function(c){ body += '  \u26a0 '+c+'\n'; });
+    body += '\n';
   } else {
-    body+='✔ ALL ITEMS PASSED - NO CONCERNS\n\n';
+    body += '\u2714 ALL ITEMS PASSED \u2014 NO CONCERNS\n\n';
   }
-  body+='PRE-TRIP INSPECTION\n====================\n';
+  body += 'PRE-TRIP INSPECTION\n';
+  body += '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n';
   its.forEach(function(item,i){
-    var s=idata[item]?idata[item].pre:null;
-    body+=lbs[i]+': '+(s==='safe'?'✔ SAFE':s==='concern'?'⚠ CONCERN - ACTION NEEDED':'○ Not Checked')+'\n';
+    var s = idata.pre[item] || '';
+    body += lbs[i] + ': ' + (s==='safe' ? '\u2714 SAFE' : s==='concern' ? '\u26a0 CONCERN' : '\u25cb Not Checked') + '\n';
   });
-  var preGasDisplay = idata.pg === 'Empty' ? '*** EMPTY - NEEDS FUEL ***' : (idata.pg||'Not Selected');
-  body+='Gas Level: '+preGasDisplay+'\n';
-  body+='Remarks: '+(document.getElementById('prerm')?document.getElementById('prerm').value||'None':'None')+'\n\n';
-  body+='POST-TRIP INSPECTION\n====================\n';
+  body += 'Gas Level: ' + (idata.pg==='Empty' ? '*** EMPTY - NEEDS FUEL ***' : (idata.pg||'Not Selected')) + '\n';
+  if(preRmk) body += 'Remarks: ' + preRmk + '\n';
+  body += '\nPOST-TRIP INSPECTION\n';
+  body += '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n';
   its.forEach(function(item,i){
-    var s=idata[item]?idata[item].post:null;
-    body+=lbs[i]+': '+(s==='safe'?'✔ SAFE':s==='concern'?'⚠ CONCERN - ACTION NEEDED':'○ Not Checked')+'\n';
+    var s = idata.post[item] || '';
+    body += lbs[i] + ': ' + (s==='safe' ? '\u2714 SAFE' : s==='concern' ? '\u26a0 CONCERN' : '\u25cb Not Checked') + '\n';
   });
-  var postGasDisplay = idata.pog === 'Empty' ? '*** EMPTY - NEEDS FUEL ***' : (idata.pog||'Not Selected');
-  body+='Gas Level: '+postGasDisplay+'\n';
-  body+='Remarks: '+(document.getElementById('postrm')?document.getElementById('postrm').value||'None':'None')+'\n';
-  if(idata.photos.length>0)body+='\nPhotos: '+idata.photos.length+' photo(s) - attach from camera roll.\n';
+  body += 'Gas Level: ' + (idata.pog==='Empty' ? '*** EMPTY - NEEDS FUEL ***' : (idata.pog||'Not Selected')) + '\n';
+  if(postRmk) body += 'Remarks: ' + postRmk + '\n';
+  body += '\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n';
+  body += 'Submitted by Frank Mulkey \u2014 Nicky Transportation\n';
 
-  // Open print view for inspection
-  openInspPrintView(d,its,lbs);
+  var sub = 'Trailer Inspection \u2014 ' + (d.tki||'Tanker') + ' \u2014 ' + (d.td||'');
+  var mailto = 'mailto:' + encodeURIComponent(to)
+    + '?subject=' + encodeURIComponent(sub)
+    + (cc ? '&cc=' + encodeURIComponent(cc) : '')
+    + '&body=' + encodeURIComponent(body);
+
+  // Hidden <a> click — works on all platforms without popup permission
+  var a = document.createElement('a');
+  a.href = mailto;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ document.body.removeChild(a); }, 500);
+
+  // Also open formatted print view via data: URI (never blocked)
+  openInspPrintView(d, its, lbs);
 }
-function openInspPrintView(d,its,lbs){
-  var concerns=[];
+
+function openInspPrintView(d, its, lbs){
+  var concerns = [];
   its.forEach(function(item,i){
-    if(idata[item]&&idata[item].pre==='concern') concerns.push('PRE-TRIP: '+lbs[i]);
-    if(idata[item]&&idata[item].post==='concern') concerns.push('POST-TRIP: '+lbs[i]);
+    if(idata.pre[item]==='concern')  concerns.push('PRE-TRIP: '+lbs[i]);
+    if(idata.post[item]==='concern') concerns.push('POST-TRIP: '+lbs[i]);
   });
+  var preRmk  = (document.getElementById('prerm')  && document.getElementById('prerm').value)  || '';
+  var postRmk = (document.getElementById('postrm') && document.getElementById('postrm').value) || '';
 
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8">';
-  html+='<title>Inspection Report - '+(d.tki||'Trailer')+' - '+(d.td||'')+'</title>';
-  html+='<style>';
-  html+='*{box-sizing:border-box;margin:0;padding:0}';
-  html+='body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;background:#fff;padding:20px;max-width:750px;margin:0 auto}';
-  html+='.logo-header{background:#1a1a1a;padding:16px 20px;border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:space-between}';
-  html+='.logo-header img{height:50px;object-fit:contain}';
-  html+='.logo-header .doc-title{color:rgba(255,255,255,0.6);font-size:11px;letter-spacing:2px;text-transform:uppercase;text-align:right}';
-  html+='.logo-header .doc-date{color:#ffd700;font-size:14px;font-weight:bold;text-align:right;margin-top:3px}';
-  html+='.meta{background:#fff;border:1px solid #ddd;border-top:none;padding:0;margin-bottom:12px;border-radius:0 0 6px 6px}';
-  html+='.meta-grid{display:grid;grid-template-columns:1fr 1fr}';
-  html+='.meta-cell{padding:10px 14px;border-bottom:1px solid #f0f0f0;border-right:1px solid #f0f0f0}';
-  html+='.meta-cell:nth-child(even){border-right:none}';
-  html+='.lbl{font-size:10px;font-weight:bold;text-transform:uppercase;color:#888;display:block;margin-bottom:3px;letter-spacing:0.5px}';
-  html+='.val{font-size:14px;font-weight:bold}';
-  html+='.section{border:1px solid #ddd;margin-bottom:12px;border-radius:6px;overflow:hidden}';
-  html+='.sec-head{background:#8b0000;color:#fff;padding:8px 14px;font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase}';
-  html+='.item{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid #f0f0f0}';
-  html+='.item:last-child{border-bottom:none}';
-  html+='.item-lbl{font-size:13px;font-weight:600}';
-  html+='.badge{padding:4px 14px;border-radius:20px;font-size:12px;font-weight:bold}';
-  html+='.safe{background:#dcfce7;color:#15803d;border:1px solid #86efac}';
-  html+='.concern{background:#fee2e2;color:#cc0000;border:1px solid #fca5a5}';
-  html+='.unchecked{background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0}';
-  html+='.gas-row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px}';
-  html+='.rmk-row{padding:9px 14px;font-size:12px;color:#555;background:#fafafa}';
-  html+='.alert-box{background:#fee2e2;border:2px solid #cc0000;border-radius:6px;padding:12px 16px;margin-bottom:12px}';
-  html+='.alert-box h3{color:#cc0000;font-size:13px;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}';
-  html+='.alert-box li{font-size:13px;color:#7f1d1d;margin-bottom:3px;margin-left:16px}';
-  html+='.ok-box{background:#dcfce7;border:2px solid #16a34a;border-radius:6px;padding:10px 16px;margin-bottom:12px;color:#15803d;font-weight:bold;font-size:13px}';
-  html+='.photos-grid{display:flex;flex-wrap:wrap;gap:8px;padding:12px}';
-  html+='.photo-img{width:160px;height:160px;object-fit:cover;border-radius:6px;border:1px solid #ddd}';
-  html+='.footer{text-align:center;font-size:10px;color:#aaa;margin-top:16px;padding-top:10px;border-top:1px solid #eee}';
-  html+='@media print{body{padding:0}.print-btn{display:none!important}}';
-  html+='</style></head><body>';
+  function mkBadge(val){
+    if(val==='safe')    return '<span style="background:#16a34a;color:#fff;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold">\u2714 Safe</span>';
+    if(val==='concern') return '<span style="background:#cc0000;color:#fff;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold">\u26a0 Concern</span>';
+    return '<span style="background:#94a3b8;color:#fff;padding:3px 10px;border-radius:12px;font-size:12px">Not Checked</span>';
+  }
+  function rowBg(val){ return val==='safe'?'#f0fdf4':val==='concern'?'#fff5f5':'#fafafa'; }
 
-  html+='<div class="print-btn" style="text-align:center;margin-bottom:16px">';
-  html+='<button onclick="window.print()" style="background:#8b0000;color:#fff;border:none;padding:12px 32px;font-size:16px;font-weight:bold;border-radius:8px;cursor:pointer;letter-spacing:1px">🖨️ PRINT / SAVE AS PDF</button>';
-  html+='<p style="margin-top:8px;font-size:12px;color:#666">Tap Print → Choose &quot;Save as PDF&quot; → Attach to email</p>';
-  html+='</div>';
-
-  html+='<div class="logo-header">';
-  html+='<img src="'+LOGO_SRC+'" alt="Nicky Transportation">';
-  html+='<div><div class="doc-title">Trailer Inspection Report</div><div class="doc-date">'+(d.td||'')+'</div></div>';
-  html+='</div>';
-
-  html+='<div class="meta"><div class="meta-grid">';
-  html+='<div class="meta-cell"><span class="lbl">Driver</span><span class="val">Frank Mulkey</span></div>';
-  html+='<div class="meta-cell"><span class="lbl">Date</span><span class="val">'+(d.td||'—')+'</span></div>';
-  html+='<div class="meta-cell"><span class="lbl">Tanker #</span><span class="val">'+(d.tki||'—')+'</span></div>';
-  html+='<div class="meta-cell"><span class="lbl">Customer</span><span class="val">'+(d.csti||'—')+'</span></div>';
-  html+='</div></div>';
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
+  html += '<title>Inspection \u2014 '+(d.tki||'')+' '+(d.td||'')+'</title>';
+  html += '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;background:#fff;padding:20px;max-width:750px;margin:0 auto}.hdr{background:#8b0000;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0;margin-bottom:0}.sec{border:1px solid #ddd;border-top:none;margin-bottom:12px;border-radius:0 0 6px 6px}.sh{background:#8b0000;color:#fff;padding:8px 14px;font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase}.row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid #f0f0f0}.row:last-child{border-bottom:none}.lbl{font-size:13px;font-weight:600}.meta{display:grid;grid-template-columns:1fr 1fr;border:1px solid #ddd;border-top:none;margin-bottom:12px;border-radius:0 0 8px 8px}.mc{padding:10px 14px;border-bottom:1px solid #f0f0f0;border-right:1px solid #f0f0f0}.mc:nth-child(even){border-right:none}.ml{font-size:10px;font-weight:bold;text-transform:uppercase;color:#888;display:block;margin-bottom:3px}.mv{font-size:14px;font-weight:bold}.gas{padding:9px 14px;background:#f8fafc;border-top:1px solid #f0f0f0}.rmk{padding:9px 14px;font-size:12px;color:#555;background:#fffbeb;border-top:1px solid #f0f0f0}.alert{background:#fee2e2;border:2px solid #cc0000;border-radius:6px;padding:12px 16px;margin-bottom:12px}.ok{background:#dcfce7;border:2px solid #16a34a;border-radius:6px;padding:10px 16px;margin-bottom:12px;color:#15803d;font-weight:bold}.footer{text-align:center;font-size:10px;color:#aaa;margin-top:16px;padding-top:10px;border-top:1px solid #eee}@media print{.pbtn{display:none!important}body{padding:0}}</style>';
+  html += '</head><body>';
+  html += '<div class="pbtn" style="text-align:center;margin-bottom:16px"><button onclick="window.print()" style="background:#8b0000;color:#fff;border:none;padding:12px 32px;font-size:16px;font-weight:bold;border-radius:8px;cursor:pointer">\ud83d\udda8\ufe0f PRINT / SAVE AS PDF</button></div>';
+  html += '<div class="hdr"><h2 style="font-size:20px;margin:0">\ud83d\ude9b NICKY TRANSPORTATION</h2><p style="opacity:0.8;margin:4px 0 0;font-size:12px;letter-spacing:1px;text-transform:uppercase">Super D Trailer Inspection Report</p></div>';
+  html += '<div class="meta"><div class="mc"><span class="ml">Driver</span><span class="mv">Frank Mulkey</span></div><div class="mc"><span class="ml">Date</span><span class="mv">'+(d.td||'\u2014')+'</span></div><div class="mc"><span class="ml">Tanker #</span><span class="mv">'+(d.tki||'\u2014')+'</span></div><div class="mc"><span class="ml">Customer</span><span class="mv">'+(d.csti||'\u2014')+'</span></div></div>';
 
   if(concerns.length>0){
-    html+='<div class="alert-box"><h3>⚠ Items Requiring Attention</h3><ul>';
-    concerns.forEach(function(c){html+='<li>'+c+'</li>';});
-    html+='</ul></div>';
+    html += '<div class="alert"><strong style="color:#cc0000;font-size:13px;text-transform:uppercase">\u26a0 Items Requiring Attention</strong><ul style="margin:6px 0 0 16px">';
+    concerns.forEach(function(c){html+='<li style="font-size:13px;color:#7f1d1d;margin-bottom:3px">'+c+'</li>';});
+    html += '</ul></div>';
   } else {
-    html+='<div class="ok-box">✔ All Items Passed — No Concerns</div>';
+    html += '<div class="ok">\u2714 All Items Passed \u2014 No Concerns</div>';
   }
 
-  // Pre-trip
-  html+='<div class="section"><div class="sec-head">Pre-Trip Inspection</div>';
+  html += '<div class="sec"><div class="sh">Pre-Trip Inspection</div>';
   its.forEach(function(item,i){
-    var s=idata[item]?idata[item].pre:null;
-    var badge=s==='safe'?'<span class="badge safe">✓ Safe</span>':s==='concern'?'<span class="badge concern">⚠ Concern</span>':'<span class="badge unchecked">Not Checked</span>';
-    html+='<div class="item"><span class="item-lbl">'+lbs[i]+'</span>'+badge+'</div>';
+    var v = idata.pre[item]||'';
+    html += '<div class="row" style="background:'+rowBg(v)+'"><span class="lbl">'+lbs[i]+'</span>'+mkBadge(v)+'</div>';
   });
-  var preG=idata.pg;
-  var preGbadge=preG==='Empty'?'<span class="badge concern">⚠ Empty</span>':preG?'<span class="badge safe">'+preG+'</span>':'<span class="badge unchecked">Not Selected</span>';
-  html+='<div class="gas-row"><span class="item-lbl">Gas Level</span>'+preGbadge+'</div>';
-  var preRmk=document.getElementById('prerm')?document.getElementById('prerm').value:'';
-  if(preRmk) html+='<div class="rmk-row"><strong>Remarks:</strong> '+preRmk+'</div>';
-  html+='</div>';
+  var pg = idata.pg||'';
+  html += '<div class="gas"><strong>Gas Level: </strong>'+(pg==='Empty'?'<span style="background:#cc0000;color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:bold">\u26a0 EMPTY</span>':(pg?'<span style="background:#16a34a;color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:bold">'+pg+'</span>':'<span style="color:#888">Not Selected</span>'))+'</div>';
+  if(preRmk) html += '<div class="rmk"><strong>Remarks: </strong>'+preRmk+'</div>';
+  html += '</div>';
 
-  // Post-trip
-  html+='<div class="section"><div class="sec-head">Post-Trip Inspection</div>';
+  html += '<div class="sec"><div class="sh">Post-Trip Inspection</div>';
   its.forEach(function(item,i){
-    var s=idata[item]?idata[item].post:null;
-    var badge=s==='safe'?'<span class="badge safe">✓ Safe</span>':s==='concern'?'<span class="badge concern">⚠ Concern</span>':'<span class="badge unchecked">Not Checked</span>';
-    html+='<div class="item"><span class="item-lbl">'+lbs[i]+'</span>'+badge+'</div>';
+    var v = idata.post[item]||'';
+    html += '<div class="row" style="background:'+rowBg(v)+'"><span class="lbl">'+lbs[i]+'</span>'+mkBadge(v)+'</div>';
   });
-  var postG=idata.pog;
-  var postGbadge=postG==='Empty'?'<span class="badge concern">⚠ Empty</span>':postG?'<span class="badge safe">'+postG+'</span>':'<span class="badge unchecked">Not Selected</span>';
-  html+='<div class="gas-row"><span class="item-lbl">Gas Level</span>'+postGbadge+'</div>';
-  var postRmk=document.getElementById('postrm')?document.getElementById('postrm').value:'';
-  if(postRmk) html+='<div class="rmk-row"><strong>Remarks:</strong> '+postRmk+'</div>';
-  html+='</div>';
+  var pog = idata.pog||'';
+  html += '<div class="gas"><strong>Gas Level: </strong>'+(pog==='Empty'?'<span style="background:#cc0000;color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:bold">\u26a0 EMPTY</span>':(pog?'<span style="background:#16a34a;color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:bold">'+pog+'</span>':'<span style="color:#888">Not Selected</span>'))+'</div>';
+  if(postRmk) html += '<div class="rmk"><strong>Remarks: </strong>'+postRmk+'</div>';
+  html += '</div>';
 
-  if(idata.photos&&idata.photos.length>0){
-    html+='<div class="section"><div class="sec-head">Defect Photos ('+idata.photos.length+')</div>';
-    html+='<div class="photos-grid">';
-    idata.photos.forEach(function(src){html+='<img src="'+src+'" class="photo-img">';});
-    html+='</div></div>';
-  }
+  html += '<div class="footer">Nicky Transportation \u2022 '+(d.td||'')+' \u2022 Submitted by Frank Mulkey</div>';
+  html += '</body></html>';
 
-  html+='<div class="footer">Nicky Transportation &bull; '+(d.td||'')+'&bull; Created by Frank Mulkey</div>';
-  html+='</body></html>';
-
-  var w=window.open('',"_blank");
-  if(w){w.document.write(html);w.document.close();}
-  else{alert('Please allow pop-ups to open the print view.');}
+  // data: URI — opens in new tab, never blocked by popup blockers
+  var uri = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+  var a = document.createElement('a');
+  a.href = uri;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ document.body.removeChild(a); }, 500);
 }
-
 function chkInspBtn(){
   var t=document.getElementById('tki').value;
   var isSD=t&&t.toUpperCase().indexOf('SD-')!==-1;
@@ -1506,9 +1547,12 @@ function sendPAAInsp(){
   h+='<div class="footer">Nickey Transportation &bull; Intermodal Inspection Report &bull; '+date+' &bull; Driver: '+driverSig+'<br>Copyright 2013 J. J. Keller &amp; Associates, Inc. All rights reserved.</div>';
   h+='</body></html>';
 
-  var w=window.open('','_blank');
-  if(w){w.document.write(h);w.document.close();}
-  else{alert('Please allow pop-ups to open the print view.');}
+  // data: URI — never blocked by popup blockers on any device
+  var a=document.createElement('a');
+  a.href='data:text/html;charset=utf-8,'+encodeURIComponent(h);
+  a.target='_blank';a.rel='noopener';a.style.display='none';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);},500);
 }
 
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(e){console.log('SW:',e);});});}
