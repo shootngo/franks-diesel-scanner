@@ -1,0 +1,9 @@
+{
+  "name": "Nickey Professional Dispatch",
+  "short_name": "Nickey",
+  "start_url": "./nickey_professional_dispatch.html",
+  "display": "standalone",
+  "background_color": "#252525",
+  "theme_color": "#cc0000",
+  "icons": []
+}
